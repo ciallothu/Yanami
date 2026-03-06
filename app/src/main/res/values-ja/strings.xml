@@ -128,6 +128,10 @@
     <string name="theme_pink">ピンク</string>
     <string name="theme_orange">オレンジ</string>
     <string name="theme_green">グリーン</string>
+    <string name="theme_red">レッド</string>
+    <string name="theme_green_mtb">オリーブ</string>
+    <string name="theme_blue_mtb">インディゴ</string>
+    <string name="theme_yellow">ゴールド</string>
 
     <!-- エラー -->
     <string name="error_no_server_selected">サーバーが選択されていません</string>

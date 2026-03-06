@@ -254,6 +254,10 @@ private fun getThemeColorName(color: ThemeColor): String {
         ThemeColor.PINK -> stringResource(R.string.theme_pink)
         ThemeColor.ORANGE -> stringResource(R.string.theme_orange)
         ThemeColor.GREEN -> stringResource(R.string.theme_green)
+        ThemeColor.RED -> stringResource(R.string.theme_red)
+        ThemeColor.GREEN_MTB -> stringResource(R.string.theme_green_mtb)
+        ThemeColor.BLUE_MTB -> stringResource(R.string.theme_blue_mtb)
+        ThemeColor.YELLOW -> stringResource(R.string.theme_yellow)
     }
 }
 

@@ -128,6 +128,10 @@
     <string name="theme_pink">Pink</string>
     <string name="theme_orange">Orange</string>
     <string name="theme_green">Green</string>
+    <string name="theme_red">Red</string>
+    <string name="theme_green_mtb">Olive</string>
+    <string name="theme_blue_mtb">Indigo</string>
+    <string name="theme_yellow">Gold</string>
 
     <!-- Errors -->
     <string name="error_no_server_selected">No server selected</string>

@@ -1,0 +1,136 @@
+<resources>
+    <string name="app_name">Yanami</string>
+
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_save">Save</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_search">Search</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Server Management -->
+    <string name="server_management">Server Management</string>
+    <string name="server_add">Add Server</string>
+    <string name="server_edit">Edit Server</string>
+    <string name="server_add_fab_desc">Add server</string>
+    <string name="server_empty_title">No servers yet</string>
+    <string name="server_empty_subtitle">Tap the + button to add your first instance</string>
+    <string name="server_active_badge">Active</string>
+    <string name="server_delete_title">Delete Server</string>
+    <string name="server_delete_confirm">Delete \"%s\"? This action cannot be undone.</string>
+    <string name="server_switched">Server switched</string>
+    <string name="server_switch_failed">Switch failed: %s</string>
+    <string name="server_deleted">Deleted</string>
+    <string name="server_delete_failed">Delete failed: %s</string>
+    <string name="server_updated">Server updated</string>
+    <string name="server_relogin_title">Re-login</string>
+    <string name="server_relogin_target">Target server: %s</string>
+    <string name="server_relogin_desc">Current session has expired. Please re-authenticate.</string>
+    <string name="server_relogin_action">Sign in again</string>
+    <string name="server_relogin_success">Re-login successful</string>
+    <string name="server_relogin_failed">Re-login failed: %s</string>
+    <string name="server_relogin_need_2fa">Please enter a new 2FA code</string>
+
+    <!-- Add Server Form -->
+    <string name="add_server_name_label">Server name</string>
+    <string name="add_server_name_hint">e.g. My Komari</string>
+    <string name="add_server_url_label">Server URL</string>
+    <string name="add_server_url_hint">https://komari.example.com</string>
+    <string name="add_server_username_label">Username</string>
+    <string name="add_server_username_hint">admin</string>
+    <string name="add_server_password_label">Password</string>
+    <string name="add_server_2fa_label">2FA Code</string>
+    <string name="add_server_2fa_hint">6-digit verification code</string>
+    <string name="add_server_2fa_expand">Need 2FA? Tap to expand</string>
+    <string name="add_server_test_connection">Test Connection</string>
+    <string name="add_server_test_success">Connected! Server version: %s</string>
+    <string name="add_server_test_fail">Connection failed: %s</string>
+    <string name="add_server_fill_required">Please fill in URL, username and password</string>
+    <string name="add_server_fill_all">Please fill in all required fields</string>
+    <string name="add_server_saved">Server added</string>
+    <string name="add_server_save_failed">Save failed: %s</string>
+
+    <!-- Node List -->
+    <string name="node_list">Node List</string>
+    <string name="node_search_hint">Search nodes…</string>
+    <string name="node_stat_total">Total</string>
+    <string name="node_stat_online">Online</string>
+    <string name="node_stat_offline">Offline</string>
+    <string name="node_filter_all">All</string>
+    <string name="node_loading">Loading node data…</string>
+    <string name="node_load_failed">Load failed: %s</string>
+    <string name="node_refresh_failed">Refresh failed: %s</string>
+    <string name="node_detail_todo">Node detail (Task 4)</string>
+    <string name="node_no_match">No matching nodes found</string>
+    <string name="node_group_empty">No nodes in this group</string>
+    <string name="node_no_data">No node data</string>
+    <string name="node_status_online">Online</string>
+    <string name="node_status_offline">Offline</string>
+    <string name="node_upload">Upload</string>
+    <string name="node_download">Download</string>
+    <string name="tcp_connections">TCP</string>
+    <string name="udp_connections">UDP</string>
+    <string name="node_uptime">Uptime</string>
+    <string name="node_expand">Expand</string>
+    <string name="node_collapse">Collapse</string>
+    <string name="node_traffic_up">Total upload traffic</string>
+    <string name="node_traffic_down">Total download traffic</string>
+    <string name="node_net_speed">Speed</string>
+    <string name="node_net_traffic">Traffic</string>
+
+    <!-- Node Detail -->
+    <string name="node_detail_title">Node Detail</string>
+    <string name="node_detail_os">OS</string>
+    <string name="node_detail_kernel">Kernel</string>
+    <string name="node_detail_platform">Platform / Arch</string>
+    <string name="node_detail_cpu">CPU</string>
+    <string name="node_detail_cores">Cores</string>
+    <string name="node_detail_cpu_usage">CPU Usage</string>
+    <string name="node_detail_ram">RAM</string>
+    <string name="node_detail_disk">Disk</string>
+    <string name="node_detail_net_speed">Net Speed</string>
+    <string name="node_detail_net_traffic">Traffic</string>
+    <string name="node_detail_connections">Connections</string>
+    <string name="node_detail_process">Processes</string>
+    <string name="node_detail_load">Load</string>
+    <string name="node_detail_uptime">Uptime</string>
+    <string name="node_detail_load_chart">Load History</string>
+    <string name="node_detail_ping_chart">Latency Monitor</string>
+    <string name="node_detail_no_records">No Records Available</string>
+    <string name="node_detail_insufficient_data">Insufficient data to plot</string>
+    <string name="node_detail_loading">Loading Details…</string>
+    <string name="node_detail_not_found">Node Not Found</string>
+    <string name="node_detail_load_failed">Failed to load: %s</string>
+    <string name="node_detail_records_failed">Failed to load records: %s</string>
+    <string name="node_detail_realtime">Live</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme_color">Theme Color</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_dark_mode_system">Follow System</string>
+    <string name="settings_dark_mode_light">Light</string>
+    <string name="settings_dark_mode_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">Follow System</string>
+    <string name="settings_about">About</string>
+
+    <!-- Theme Color Names -->
+    <string name="theme_dynamic">Dynamic</string>
+    <string name="theme_teal">Teal</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_pink">Pink</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_green">Green</string>
+
+    <!-- Errors -->
+    <string name="error_no_server_selected">No server selected</string>
+    <string name="error_no_session">Cannot get session_token, please re-login</string>
+    <string name="action_ssh_terminal">SSH Terminal</string>
+</resources>

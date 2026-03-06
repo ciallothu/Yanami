@@ -1,0 +1,137 @@
+<resources>
+    <string name="app_name">Yanami</string>
+
+    <!-- 通用 -->
+    <string name="action_back">返回</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_confirm">确认</string>
+    <string name="action_delete">删除</string>
+    <string name="action_edit">修改</string>
+    <string name="action_save">保存</string>
+    <string name="action_retry">重试</string>
+    <string name="action_search">搜索</string>
+    <string name="action_settings">设置</string>
+
+    <!-- 服务器管理 -->
+    <string name="server_management">服务器管理</string>
+    <string name="server_add">添加服务器</string>
+    <string name="server_edit">编辑服务器</string>
+    <string name="server_add_fab_desc">添加服务器</string>
+    <string name="server_empty_title">还没有服务器</string>
+    <string name="server_empty_subtitle">点击右下角的 + 按钮添加第一个实例</string>
+    <string name="server_active_badge">当前活跃</string>
+    <string name="server_delete_title">删除服务器</string>
+    <string name="server_delete_confirm">确定要删除「%s」吗？此操作不可恢复。</string>
+    <string name="server_switched">已切换服务器</string>
+    <string name="server_switch_failed">切换失败: %s</string>
+    <string name="server_deleted">已删除</string>
+    <string name="server_delete_failed">删除失败: %s</string>
+    <string name="server_updated">服务器已更新</string>
+    <string name="server_relogin_title">重新登录</string>
+    <string name="server_relogin_target">目标服务器：%s</string>
+    <string name="server_relogin_desc">当前会话已失效，请重新验证账号。</string>
+    <string name="server_relogin_action">重新登录</string>
+    <string name="server_relogin_success">重新登录成功</string>
+    <string name="server_relogin_failed">重新登录失败: %s</string>
+    <string name="server_relogin_need_2fa">请输入新的两步验证码</string>
+
+    <!-- 添加服务器表单 -->
+    <string name="add_server_name_label">服务器名称</string>
+    <string name="add_server_name_hint">例: 我的 Komari</string>
+    <string name="add_server_url_label">服务器地址</string>
+    <string name="add_server_url_hint">https://komari.example.com</string>
+    <string name="add_server_username_label">用户名</string>
+    <string name="add_server_username_hint">admin</string>
+    <string name="add_server_password_label">密码</string>
+    <string name="add_server_2fa_label">两步验证码 (2FA)</string>
+    <string name="add_server_2fa_hint">6位数字验证码</string>
+    <string name="add_server_2fa_expand">需要两步验证？点击展开</string>
+    <string name="add_server_test_connection">测试连接</string>
+    <string name="add_server_test_success">连接成功！服务端版本: %s</string>
+    <string name="add_server_test_fail">连接失败: %s</string>
+    <string name="add_server_fill_required">请填写服务器地址、用户名和密码</string>
+    <string name="add_server_fill_all">请填写完整信息</string>
+    <string name="add_server_saved">服务器已添加</string>
+    <string name="add_server_save_failed">保存失败: %s</string>
+
+    <!-- 节点列表 -->
+    <string name="node_list">节点列表</string>
+    <string name="node_search_hint">搜索节点…</string>
+    <string name="node_stat_total">总数</string>
+    <string name="node_stat_online">在线</string>
+    <string name="node_stat_offline">离线</string>
+    <string name="node_filter_all">全部</string>
+    <string name="node_loading">正在加载节点数据…</string>
+    <string name="node_load_failed">加载失败: %s</string>
+    <string name="node_refresh_failed">刷新失败: %s</string>
+    <string name="node_detail_todo">节点详情（Task 4 实现）</string>
+    <string name="node_no_match">没有找到匹配的节点</string>
+    <string name="node_group_empty">该分组下没有节点</string>
+    <string name="node_no_data">暂无节点数据</string>
+    <string name="node_status_online">在线</string>
+    <string name="node_status_offline">离线</string>
+    <string name="node_upload">上行</string>
+    <string name="node_download">下行</string>
+    <string name="tcp_connections">TCP</string>
+    <string name="udp_connections">UDP</string>
+    <string name="node_uptime">运行时长</string>
+    <string name="node_expand">展开</string>
+    <string name="node_collapse">收起</string>
+    <string name="node_traffic_up">上传总流量</string>
+    <string name="node_traffic_down">下载总流量</string>
+    <string name="node_net_speed">实时速度</string>
+    <string name="node_net_traffic">总流量</string>
+
+    <!-- 节点详情 -->
+    <string name="node_detail_title">节点详情</string>
+    <string name="node_detail_os">操作系统</string>
+    <string name="node_detail_kernel">内核版本</string>
+    <string name="node_detail_platform">平台 / 架构</string>
+    <string name="node_detail_cpu">处理器</string>
+    <string name="node_detail_cores">核心</string>
+    <string name="node_detail_cpu_usage">CPU 使用率</string>
+    <string name="node_detail_ram">内存</string>
+    <string name="node_detail_disk">磁盘</string>
+    <string name="node_detail_net_speed">网络速度</string>
+    <string name="node_detail_net_traffic">总流量</string>
+    <string name="node_detail_connections">连接</string>
+    <string name="node_detail_process">进程</string>
+    <string name="node_detail_load">负载</string>
+    <string name="node_detail_uptime">运行时长</string>
+    <string name="node_detail_load_chart">负载图表</string>
+    <string name="node_detail_ping_chart">延迟监控</string>
+    <string name="node_detail_no_records">暂无记录数据</string>
+    <string name="node_detail_insufficient_data">数据不足，无法绘图</string>
+    <string name="node_detail_loading">正在加载详情…</string>
+    <string name="node_detail_not_found">未找到该节点</string>
+    <string name="node_detail_load_failed">加载失败: %s</string>
+    <string name="node_detail_records_failed">获取记录失败: %s</string>
+    <string name="node_detail_realtime">实时</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme_color">主题颜色</string>
+    <string name="settings_dark_mode">深色模式</string>
+    <string name="settings_dark_mode_system">跟随系统</string>
+    <string name="settings_dark_mode_light">浅色</string>
+    <string name="settings_dark_mode_dark">深色</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_about">关于</string>
+
+    <!-- 主题颜色名称 -->
+    <string name="theme_dynamic">动态取色</string>
+    <string name="theme_teal">青绿</string>
+    <string name="theme_blue">蓝色</string>
+    <string name="theme_purple">紫色</string>
+    <string name="theme_pink">粉色</string>
+    <string name="theme_orange">橙色</string>
+    <string name="theme_green">绿色</string>
+
+    <string name="action_ssh_terminal">SSH 终端</string>
+
+    <!-- 错误 -->
+    <string name="error_no_server_selected">未选择服务器实例</string>
+    <string name="error_no_session">无法获取 session_token，请重新登录</string>
+</resources>

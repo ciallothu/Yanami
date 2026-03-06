@@ -1,0 +1,136 @@
+<resources>
+    <string name="app_name">Yanami</string>
+
+    <!-- 共通 -->
+    <string name="action_back">戻る</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_confirm">確認</string>
+    <string name="action_delete">削除</string>
+    <string name="action_edit">編集</string>
+    <string name="action_save">保存</string>
+    <string name="action_retry">再試行</string>
+    <string name="action_search">検索</string>
+    <string name="action_settings">設定</string>
+
+    <!-- サーバー管理 -->
+    <string name="server_management">サーバー管理</string>
+    <string name="server_add">サーバーを追加</string>
+    <string name="server_edit">サーバーを編集</string>
+    <string name="server_add_fab_desc">サーバーを追加</string>
+    <string name="server_empty_title">サーバーがありません</string>
+    <string name="server_empty_subtitle">右下の + ボタンをタップして最初のインスタンスを追加</string>
+    <string name="server_active_badge">アクティブ</string>
+    <string name="server_delete_title">サーバーを削除</string>
+    <string name="server_delete_confirm">「%s」を削除しますか？この操作は元に戻せません。</string>
+    <string name="server_switched">サーバーを切り替えました</string>
+    <string name="server_switch_failed">切り替え失敗: %s</string>
+    <string name="server_deleted">削除しました</string>
+    <string name="server_delete_failed">削除失敗: %s</string>
+    <string name="server_updated">サーバーを更新しました</string>
+    <string name="server_relogin_title">再ログイン</string>
+    <string name="server_relogin_target">対象サーバー: %s</string>
+    <string name="server_relogin_desc">現在のセッションは無効です。再認証してください。</string>
+    <string name="server_relogin_action">再ログイン</string>
+    <string name="server_relogin_success">再ログインに成功しました</string>
+    <string name="server_relogin_failed">再ログイン失敗: %s</string>
+    <string name="server_relogin_need_2fa">新しい2FAコードを入力してください</string>
+
+    <!-- サーバー追加フォーム -->
+    <string name="add_server_name_label">サーバー名</string>
+    <string name="add_server_name_hint">例: マイ Komari</string>
+    <string name="add_server_url_label">サーバーアドレス</string>
+    <string name="add_server_url_hint">https://komari.example.com</string>
+    <string name="add_server_username_label">ユーザー名</string>
+    <string name="add_server_username_hint">admin</string>
+    <string name="add_server_password_label">パスワード</string>
+    <string name="add_server_2fa_label">二要素認証コード (2FA)</string>
+    <string name="add_server_2fa_hint">6桁の認証コード</string>
+    <string name="add_server_2fa_expand">二要素認証が必要？タップして展開</string>
+    <string name="add_server_test_connection">接続テスト</string>
+    <string name="add_server_test_success">接続成功！サーバーバージョン: %s</string>
+    <string name="add_server_test_fail">接続失敗: %s</string>
+    <string name="add_server_fill_required">URL、ユーザー名、パスワードを入力してください</string>
+    <string name="add_server_fill_all">すべての情報を入力してください</string>
+    <string name="add_server_saved">サーバーを追加しました</string>
+    <string name="add_server_save_failed">保存失敗: %s</string>
+
+    <!-- ノードリスト -->
+    <string name="node_list">ノードリスト</string>
+    <string name="node_search_hint">ノードを検索…</string>
+    <string name="node_stat_total">合計</string>
+    <string name="node_stat_online">オンライン</string>
+    <string name="node_stat_offline">オフライン</string>
+    <string name="node_filter_all">すべて</string>
+    <string name="node_loading">ノードデータを読み込み中…</string>
+    <string name="node_load_failed">読み込み失敗: %s</string>
+    <string name="node_refresh_failed">更新失敗: %s</string>
+    <string name="node_detail_todo">ノード詳細（Task 4）</string>
+    <string name="node_no_match">一致するノードが見つかりません</string>
+    <string name="node_group_empty">このグループにはノードがありません</string>
+    <string name="node_no_data">ノードデータがありません</string>
+    <string name="node_status_online">オンライン</string>
+    <string name="node_status_offline">オフライン</string>
+    <string name="node_upload">アップロード</string>
+    <string name="node_download">ダウンロード</string>
+    <string name="tcp_connections">TCP</string>
+    <string name="udp_connections">UDP</string>
+    <string name="node_uptime">稼働時間</string>
+    <string name="node_expand">展開</string>
+    <string name="node_collapse">折りたたむ</string>
+    <string name="node_traffic_up">アップロード総通信量</string>
+    <string name="node_traffic_down">ダウンロード総通信量</string>
+    <string name="node_net_speed">リアルタイム速度</string>
+    <string name="node_net_traffic">総通信量</string>
+
+    <!-- サーバー詳細 -->
+    <string name="node_detail_title">サーバー詳細</string>
+    <string name="node_detail_os">OS</string>
+    <string name="node_detail_kernel">カーネル</string>
+    <string name="node_detail_platform">プラットフォーム</string>
+    <string name="node_detail_cpu">CPU</string>
+    <string name="node_detail_cores">コア数</string>
+    <string name="node_detail_cpu_usage">CPU使用率</string>
+    <string name="node_detail_ram">メモリ</string>
+    <string name="node_detail_disk">ディスク</string>
+    <string name="node_detail_net_speed">ネットワーク速度</string>
+    <string name="node_detail_net_traffic">総通信量</string>
+    <string name="node_detail_connections">接続数</string>
+    <string name="node_detail_process">プロセス数</string>
+    <string name="node_detail_load">負荷</string>
+    <string name="node_detail_uptime">稼働時間</string>
+    <string name="node_detail_load_chart">負荷履歴</string>
+    <string name="node_detail_ping_chart">遅延監視</string>
+    <string name="node_detail_no_records">記録データがありません</string>
+    <string name="node_detail_insufficient_data">データ不足のため描画できません</string>
+    <string name="node_detail_loading">詳細を読み込んでいます…</string>
+    <string name="node_detail_not_found">サーバーが見つかりません</string>
+    <string name="node_detail_load_failed">読み込み失敗: %s</string>
+    <string name="node_detail_records_failed">記録取得失敗: %s</string>
+    <string name="node_detail_realtime">リアルタイム</string>
+
+    <!-- 設定 -->
+    <string name="settings_title">設定</string>
+    <string name="settings_appearance">外観</string>
+    <string name="settings_theme_color">テーマカラー</string>
+    <string name="settings_dark_mode">ダークモード</string>
+    <string name="settings_dark_mode_system">システムに従う</string>
+    <string name="settings_dark_mode_light">ライト</string>
+    <string name="settings_dark_mode_dark">ダーク</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_system">システムに従う</string>
+    <string name="settings_about">アプリについて</string>
+
+    <!-- テーマカラー名 -->
+    <string name="theme_dynamic">ダイナミック</string>
+    <string name="theme_teal">ティール</string>
+    <string name="theme_blue">ブルー</string>
+    <string name="theme_purple">パープル</string>
+    <string name="theme_pink">ピンク</string>
+    <string name="theme_orange">オレンジ</string>
+    <string name="theme_green">グリーン</string>
+
+    <!-- エラー -->
+    <string name="error_no_server_selected">サーバーが選択されていません</string>
+    <string name="error_no_session">session_tokenを取得できません。再ログインしてください</string>
+    <string name="action_ssh_terminal">SSHターミナル</string>
+</resources>

@@ -57,7 +57,8 @@ Each screen follows a **Contract pattern** — a `Contract` object containing ne
 
 ```
 ServerListScreen → AddServerScreen → NodeListScreen → NodeDetailScreen
-                                   ↘ SettingsScreen
+                 ↘ SettingsHubScreen → SettingsScreen (视觉与样式)
+                                     ↘ AboutScreen
 ```
 
 ### Data & Networking

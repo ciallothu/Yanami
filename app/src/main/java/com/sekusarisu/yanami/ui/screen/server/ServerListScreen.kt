@@ -57,7 +57,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
-import com.sekusarisu.yanami.ui.screen.settings.SettingsScreen
+import com.sekusarisu.yanami.ui.screen.settings.SettingsHubScreen
 import com.sekusarisu.yanami.ui.screen.soundClick
 
 /**
@@ -102,7 +102,7 @@ class ServerListScreen : Screen {
                             title = { Text(stringResource(R.string.server_management)) },
                             scrollBehavior = scrollBehavior,
                             actions = {
-                                IconButton(onClick = soundClick { navigator.push(SettingsScreen()) }) {
+                                IconButton(onClick = soundClick { navigator.push(SettingsHubScreen()) }) {
                                     Icon(
                                             Icons.Default.Settings,
                                             contentDescription =

@@ -3,6 +3,7 @@ package com.sekusarisu.yanami.ui.screen.terminal
 import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -400,7 +401,7 @@ private fun SpecialKeysToolbar(
 ) {
     val context = LocalContext.current
     val activeColor = MaterialTheme.colorScheme.primary
-    val normalColor = Color.LightGray
+    val normalColor = MaterialTheme.colorScheme.onPrimaryContainer
 
     @Composable
     fun KeyBtn(key: ToolbarKey, modifier: Modifier) {
@@ -423,7 +424,8 @@ private fun SpecialKeysToolbar(
         TextButton(
                 onClick = soundClick { onClick() },
                 modifier = modifier.height(BTN_HEIGHT),
-                contentPadding = BTN_PADDING
+                contentPadding = BTN_PADDING,
+                border = if (active) BorderStroke(1.dp,  activeColor) else null
         ) {
             Text(
                     label,

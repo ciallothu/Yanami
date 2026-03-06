@@ -1093,12 +1093,11 @@ private fun rememberThemedLine(color: Color): LineCartesianLayer.Line =
 
 // ─── 图表工具函数 ───
 
-private fun getUsageColor(percent: Double): Color {
-    return when {
-        percent < 60 -> Color(0xFF4CAF50) // 绿
-        percent < 85 -> Color(0xFFFFC107) // 黄
-        else -> Color(0xFFF44336) // 红
-    }
+@Composable
+private fun getUsageColor(percent: Double): Color = when {
+    percent < 60 -> MaterialTheme.colorScheme.primary
+    percent < 85 -> MaterialTheme.colorScheme.tertiary
+    else -> MaterialTheme.colorScheme.error
 }
 
 @Preview

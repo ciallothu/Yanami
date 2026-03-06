@@ -198,7 +198,7 @@ class SshTerminalScreen(private val uuid: String, private val nodeName: String) 
                         onToggleCtrl = { viewModel.onEvent(SshTerminalContract.Event.ToggleCtrl) },
                         onToggleAlt = { viewModel.onEvent(SshTerminalContract.Event.ToggleAlt) },
                         onToggleFn = { viewModel.onEvent(SshTerminalContract.Event.ToggleFn) },
-                        modifier = Modifier.fillMaxWidth().background(Color(0xFF1A1A1A))
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer)
                 )
             }
         }

@@ -65,7 +65,13 @@ constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs
         return true
     }
 
-    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = true
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        // 仅消费 onKeyDown 也会消费的按键，保持一致性
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN -> true
+            else -> keyCodeToBytes(keyCode, event) != null
+        }
+    }
 
     // ─── 内部 InputConnection 实现 ───
 
@@ -117,15 +123,34 @@ constructor(context: Context, attrs: AttributeSet? = null) : View(context, attrs
                 KeyEvent.KEYCODE_PAGE_UP -> byteArrayOf(27, 91, 53, 126) // ESC [ 5 ~
                 KeyEvent.KEYCODE_PAGE_DOWN -> byteArrayOf(27, 91, 54, 126) // ESC [ 6 ~
                 KeyEvent.KEYCODE_INSERT -> byteArrayOf(27, 91, 50, 126) // ESC [ 2 ~
+                // F1–F12（蓝牙键盘通过 Fn 组合键发送）
+                KeyEvent.KEYCODE_F1 -> byteArrayOf(27, 79, 80)           // ESC O P
+                KeyEvent.KEYCODE_F2 -> byteArrayOf(27, 79, 81)           // ESC O Q
+                KeyEvent.KEYCODE_F3 -> byteArrayOf(27, 79, 82)           // ESC O R
+                KeyEvent.KEYCODE_F4 -> byteArrayOf(27, 79, 83)           // ESC O S
+                KeyEvent.KEYCODE_F5 -> byteArrayOf(27, 91, 49, 53, 126) // ESC [ 1 5 ~
+                KeyEvent.KEYCODE_F6 -> byteArrayOf(27, 91, 49, 55, 126) // ESC [ 1 7 ~
+                KeyEvent.KEYCODE_F7 -> byteArrayOf(27, 91, 49, 56, 126) // ESC [ 1 8 ~
+                KeyEvent.KEYCODE_F8 -> byteArrayOf(27, 91, 49, 57, 126) // ESC [ 1 9 ~
+                KeyEvent.KEYCODE_F9 -> byteArrayOf(27, 91, 50, 48, 126) // ESC [ 2 0 ~
+                KeyEvent.KEYCODE_F10 -> byteArrayOf(27, 91, 50, 49, 126) // ESC [ 2 1 ~
+                KeyEvent.KEYCODE_F11 -> byteArrayOf(27, 91, 50, 51, 126) // ESC [ 2 3 ~
+                KeyEvent.KEYCODE_F12 -> byteArrayOf(27, 91, 50, 52, 126) // ESC [ 2 4 ~
                 else -> {
-                    // 处理 Ctrl 组合键和可打印字符
-                    val unicodeChar = event.getUnicodeChar(event.metaState)
+                    // 处理 Ctrl/Alt 组合键和可打印字符
+                    var unicodeChar = event.getUnicodeChar(event.metaState)
+                    if (unicodeChar == 0 && (event.isCtrlPressed || event.isAltPressed)) {
+                        // 部分蓝牙键盘的 KeyCharacterMap 未定义修饰键映射，
+                        // getUnicodeChar(metaState) 返回 0，回退到无修饰的基础字符
+                        unicodeChar = event.getUnicodeChar(0)
+                    }
                     if (unicodeChar > 0) {
-                        if (event.isCtrlPressed) {
+                        val baseBytes = if (event.isCtrlPressed) {
                             byteArrayOf((unicodeChar and 0x1f).toByte())
                         } else {
                             String(Character.toChars(unicodeChar)).toByteArray(Charsets.UTF_8)
                         }
+                        if (event.isAltPressed) byteArrayOf(27) + baseBytes else baseBytes
                     } else {
                         null
                     }

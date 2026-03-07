@@ -44,6 +44,10 @@ class NodeListViewModel(
                 setState { copy(selectedGroup = event.group) }
                 applyFilters()
             }
+            is NodeListContract.Event.StatusFilterSelected -> {
+                setState { copy(statusFilter = event.filter) }
+                applyFilters()
+            }
             is NodeListContract.Event.Refresh -> refreshNodes()
             is NodeListContract.Event.Retry -> loadNodes()
             is NodeListContract.Event.NodeClicked -> {
@@ -204,7 +208,7 @@ class NodeListViewModel(
         applyFilters()
     }
 
-    /** 根据搜索和分组条件过滤节点 */
+    /** 根据搜索、分组和状态条件过滤节点 */
     private fun applyFilters() {
         val state = currentState
         val filtered =
@@ -223,7 +227,14 @@ class NodeListViewModel(
                             if (state.selectedGroup == null) true
                             else node.group == state.selectedGroup
 
-                    matchesSearch && matchesGroup
+                    val matchesStatus =
+                            when (state.statusFilter) {
+                                NodeListContract.StatusFilter.ALL -> true
+                                NodeListContract.StatusFilter.ONLINE -> node.isOnline
+                                NodeListContract.StatusFilter.OFFLINE -> !node.isOnline
+                            }
+
+                    matchesSearch && matchesGroup && matchesStatus
                 }
 
         setState { copy(filteredNodes = filtered) }

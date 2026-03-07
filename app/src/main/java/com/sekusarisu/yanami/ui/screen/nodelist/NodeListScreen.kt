@@ -1,6 +1,8 @@
 package com.sekusarisu.yanami.ui.screen.nodelist
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -254,7 +257,11 @@ private fun NodeListContent(
                     totalNetIn = state.totalNetIn,
                     totalNetOut = state.totalNetOut,
                     totalTrafficUp = state.totalTrafficUp,
-                    totalTrafficDown = state.totalTrafficDown
+                    totalTrafficDown = state.totalTrafficDown,
+                    statusFilter = state.statusFilter,
+                    onStatusFilterSelected = {
+                        viewModel.onEvent(NodeListContract.Event.StatusFilterSelected(it))
+                    }
             )
         }
 
@@ -276,7 +283,8 @@ private fun NodeListContent(
             item {
                 EmptyNodeList(
                         hasSearchQuery = state.searchQuery.isNotBlank(),
-                        hasGroupFilter = state.selectedGroup != null
+                        hasGroupFilter = state.selectedGroup != null,
+                        hasStatusFilter = state.statusFilter != NodeListContract.StatusFilter.ALL
                 )
             }
         } else {
@@ -336,7 +344,9 @@ private fun OverviewCard(
         totalNetIn: Long,
         totalNetOut: Long,
         totalTrafficUp: Long,
-        totalTrafficDown: Long
+        totalTrafficDown: Long,
+        statusFilter: NodeListContract.StatusFilter = NodeListContract.StatusFilter.ALL,
+        onStatusFilterSelected: (NodeListContract.StatusFilter) -> Unit = {}
 ) {
     Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -354,17 +364,23 @@ private fun OverviewCard(
                 StatItem(
                         label = stringResource(R.string.node_stat_total),
                         value = totalCount.toString(),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        isSelected = false,
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ALL) }
                 )
                 StatItem(
                         label = stringResource(R.string.node_stat_online),
                         value = onlineCount.toString(),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        isSelected = statusFilter == NodeListContract.StatusFilter.ONLINE,
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ONLINE) }
                 )
                 StatItem(
                         label = stringResource(R.string.node_stat_offline),
                         value = offlineCount.toString(),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
+                        isSelected = statusFilter == NodeListContract.StatusFilter.OFFLINE,
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.OFFLINE) }
                 )
             }
 
@@ -465,8 +481,27 @@ private fun OverviewCard(
 }
 
 @Composable
-private fun StatItem(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun StatItem(
+        label: String,
+        value: String,
+        color: androidx.compose.ui.graphics.Color,
+        isSelected: Boolean = false,
+        onClick: (() -> Unit)? = null
+) {
+    val bgColor =
+            if (isSelected) color.copy(alpha = 0.15f)
+            else androidx.compose.ui.graphics.Color.Transparent
+    val modifier =
+            if (onClick != null) {
+                Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onClick)
+                        .background(bgColor, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+            } else {
+                Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            }
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
@@ -555,7 +590,7 @@ private fun ErrorContent(error: String, onRetry: () -> Unit, modifier: Modifier 
 }
 
 @Composable
-private fun EmptyNodeList(hasSearchQuery: Boolean, hasGroupFilter: Boolean) {
+private fun EmptyNodeList(hasSearchQuery: Boolean, hasGroupFilter: Boolean, hasStatusFilter: Boolean = false) {
     Box(
             modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
             contentAlignment = Alignment.Center
@@ -566,7 +601,7 @@ private fun EmptyNodeList(hasSearchQuery: Boolean, hasGroupFilter: Boolean) {
         ) {
             Icon(
                     imageVector =
-                            if (hasSearchQuery || hasGroupFilter) Icons.Default.Search
+                            if (hasSearchQuery || hasGroupFilter || hasStatusFilter) Icons.Default.Search
                             else Icons.Default.CloudOff,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
@@ -607,7 +642,9 @@ fun OverviewCardPreview() {
                 totalNetIn = 1024L * 1024 * 5,
                 totalNetOut = 1024L * 1024 * 10,
                 totalTrafficUp = 1024L * 1024 * 1024 * 100,
-                totalTrafficDown = 1024L * 1024 * 1024 * 500
+                totalTrafficDown = 1024L * 1024 * 1024 * 500,
+                statusFilter = NodeListContract.StatusFilter.ALL,
+                onStatusFilterSelected = {}
             )
         }
     }

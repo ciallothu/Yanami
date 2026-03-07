@@ -8,6 +8,9 @@ import com.sekusarisu.yanami.mvi.UiState
 /** 节点列表 — MVI 契约 */
 object NodeListContract {
 
+    /** 状态筛选 */
+    enum class StatusFilter { ALL, ONLINE, OFFLINE }
+
     data class State(
             val isLoading: Boolean = true,
             val isRefreshing: Boolean = false,
@@ -16,6 +19,7 @@ object NodeListContract {
             val searchQuery: String = "",
             val groups: List<String> = emptyList(),
             val selectedGroup: String? = null, // null = 全部
+            val statusFilter: StatusFilter = StatusFilter.ALL,
             val error: String? = null,
             val onlineCount: Int = 0,
             val offlineCount: Int = 0,
@@ -30,6 +34,7 @@ object NodeListContract {
     sealed interface Event : UiEvent {
         data class SearchQueryChanged(val query: String) : Event
         data class GroupSelected(val group: String?) : Event
+        data class StatusFilterSelected(val filter: StatusFilter) : Event
         data object Refresh : Event
         data object Retry : Event
         data class NodeClicked(val uuid: String) : Event

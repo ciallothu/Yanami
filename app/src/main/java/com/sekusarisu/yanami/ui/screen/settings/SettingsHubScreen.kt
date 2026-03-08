@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
@@ -101,6 +102,15 @@ class SettingsHubScreen : Screen {
                     subtitle = stringResource(R.string.settings_auto_enter_nodelist_desc),
                     checked = state.autoEnterNodeList,
                     onCheckedChange = { viewModel.onEvent(SettingsEvent.SetAutoEnterNodeList(it)) }
+                )
+
+                // ── 图表动画 ──
+                SettingsToggleItem(
+                    icon = Icons.Default.Animation,
+                    title = stringResource(R.string.settings_chart_animation),
+                    subtitle = stringResource(R.string.settings_chart_animation_desc),
+                    checked = state.chartAnimationEnabled,
+                    onCheckedChange = { viewModel.onEvent(SettingsEvent.SetChartAnimation(it)) }
                 )
 
                 // ── 导航项 ──

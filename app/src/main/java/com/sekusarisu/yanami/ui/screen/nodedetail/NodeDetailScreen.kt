@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -59,23 +60,21 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.shader.verticalGradient
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
-import com.patrykandpatrick.vico.core.cartesian.Zoom
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.Zoom
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.sekusarisu.yanami.data.local.preferences.UserPreferences
+import com.sekusarisu.yanami.data.local.preferences.UserPreferencesRepository
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.ui.screen.soundClick
 import com.sekusarisu.yanami.domain.model.LoadRecord
@@ -88,7 +87,10 @@ import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerReLoginScreen
 import com.sekusarisu.yanami.ui.screen.terminal.SshTerminalScreen
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import java.time.Instant
+import java.time.ZoneId
 
 /**
  * 节点详情页面
@@ -104,6 +106,9 @@ class NodeDetailScreen(private val uuid: String) : Screen {
         val state by viewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
+        val prefsRepo = koinInject<UserPreferencesRepository>()
+        val prefs by prefsRepo.preferencesFlow.collectAsState(initial = UserPreferences())
+        val chartAnimationEnabled = prefs.chartAnimationEnabled
 
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -197,6 +202,7 @@ class NodeDetailScreen(private val uuid: String) : Screen {
                     ) {
                         NodeDetailContent(
                                 state = state,
+                                chartAnimationEnabled = chartAnimationEnabled,
                                 onLoadHoursChanged = {
                                     viewModel.onEvent(NodeDetailContract.Event.LoadHoursChanged(it))
                                 },
@@ -216,6 +222,7 @@ class NodeDetailScreen(private val uuid: String) : Screen {
 @Composable
 private fun NodeDetailContent(
         state: NodeDetailContract.State,
+        chartAnimationEnabled: Boolean,
         onLoadHoursChanged: (Int) -> Unit,
         onPingHoursChanged: (Int) -> Unit
 ) {
@@ -240,7 +247,8 @@ private fun NodeDetailContent(
                     isLoading =
                             if (state.selectedLoadHours == 0) false else state.isLoadRecordsLoading,
                     selectedHours = state.selectedLoadHours,
-                    onHoursChanged = onLoadHoursChanged
+                    onHoursChanged = onLoadHoursChanged,
+                    chartAnimationEnabled = chartAnimationEnabled
             )
         }
 
@@ -251,7 +259,8 @@ private fun NodeDetailContent(
                     records = state.pingRecords,
                     isLoading = state.isPingRecordsLoading,
                     selectedHours = state.selectedPingHours,
-                    onHoursChanged = onPingHoursChanged
+                    onHoursChanged = onPingHoursChanged,
+                    chartAnimationEnabled = chartAnimationEnabled
             )
         }
 
@@ -459,7 +468,8 @@ private fun LoadChartSection(
         records: List<LoadRecord>,
         isLoading: Boolean,
         selectedHours: Int,
-        onHoursChanged: (Int) -> Unit
+        onHoursChanged: (Int) -> Unit,
+        chartAnimationEnabled: Boolean
 ) {
     Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -515,7 +525,8 @@ private fun LoadChartSection(
                         data = records.map { it.cpu },
                         times = times,
                         color = MaterialTheme.colorScheme.primary,
-                        suffix = "%"
+                        suffix = "%",
+                        chartAnimationEnabled = chartAnimationEnabled
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -526,7 +537,8 @@ private fun LoadChartSection(
                         data = records.map { it.ramPercent },
                         times = times,
                         color = MaterialTheme.colorScheme.primary,
-                        suffix = "%"
+                        suffix = "%",
+                        chartAnimationEnabled = chartAnimationEnabled
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -536,7 +548,8 @@ private fun LoadChartSection(
                         title = stringResource(R.string.node_detail_net_speed),
                         netInData = records.map { it.netIn.toDouble() },
                         netOutData = records.map { it.netOut.toDouble() },
-                        times = times
+                        times = times,
+                        chartAnimationEnabled = chartAnimationEnabled
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -547,7 +560,8 @@ private fun LoadChartSection(
                         tcpData = records.map { it.connections },
                         udpData = records.map { it.connectionsUdp },
                         times = times,
-                        suffix = ""
+                        suffix = "",
+                        chartAnimationEnabled = chartAnimationEnabled
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -558,7 +572,8 @@ private fun LoadChartSection(
                         data = records.map { it.process.toDouble() },
                         times = times,
                         color = MaterialTheme.colorScheme.primary,
-                        suffix = ""
+                        suffix = "",
+                        chartAnimationEnabled = chartAnimationEnabled
                 )
             }
         }
@@ -568,8 +583,8 @@ private fun LoadChartSection(
 /** 解析 ISO 时间字符串为 HH:mm 格式 */
 private fun parseTimeLabel(isoTime: String): String {
     return try {
-        val instant = java.time.Instant.parse(isoTime)
-        val localTime = instant.atZone(java.time.ZoneId.systemDefault()).toLocalTime()
+        val instant = Instant.parse(isoTime)
+        val localTime = instant.atZone(ZoneId.systemDefault()).toLocalTime()
         "%02d:%02d".format(localTime.hour, localTime.minute)
     } catch (_: Exception) {
         ""
@@ -592,7 +607,8 @@ private fun ChartCard(
         data: List<Double>,
         times: List<String>,
         color: Color,
-        suffix: String
+        suffix: String,
+        chartAnimationEnabled: Boolean = true
 ) {
     val themedLine = rememberThemedLine(color)
     Column {
@@ -652,7 +668,9 @@ private fun ChartCard(
                     modifier = Modifier.fillMaxWidth().height(160.dp),
                     scrollState = rememberVicoScrollState(scrollEnabled = false),
                     zoomState =
-                            rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content)
+                            rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content),
+                    animationSpec = if (chartAnimationEnabled) tween(durationMillis = 500) else null,
+                    animateIn = chartAnimationEnabled
             )
         } else {
             Box(
@@ -675,7 +693,8 @@ private fun ConnectionChartCard(
     tcpData: List<Int>,
     udpData: List<Int>,
     times: List<String>,
-    suffix: String
+    suffix: String,
+    chartAnimationEnabled: Boolean = true
 ) {
     val tcpLine = rememberThemedLine(MaterialTheme.colorScheme.primary)
     val udpLine = rememberThemedLine(MaterialTheme.colorScheme.tertiary)
@@ -750,7 +769,9 @@ private fun ConnectionChartCard(
                 modifier = Modifier.fillMaxWidth().height(160.dp),
                 scrollState = rememberVicoScrollState(scrollEnabled = false),
                 zoomState =
-                    rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content)
+                    rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content),
+                animationSpec = if (chartAnimationEnabled) tween(durationMillis = 500) else null,
+                animateIn = chartAnimationEnabled
             )
 
             // 图例
@@ -776,7 +797,8 @@ private fun NetworkChartCard(
         title: String,
         netInData: List<Double>,
         netOutData: List<Double>,
-        times: List<String>
+        times: List<String>,
+        chartAnimationEnabled: Boolean = true
 ) {
     val upLine = rememberThemedLine(MaterialTheme.colorScheme.primary)
     val downLine = rememberThemedLine(MaterialTheme.colorScheme.tertiary)
@@ -850,7 +872,9 @@ private fun NetworkChartCard(
                     modifier = Modifier.fillMaxWidth().height(160.dp),
                     scrollState = rememberVicoScrollState(scrollEnabled = false),
                     zoomState =
-                            rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content)
+                            rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content),
+                    animationSpec = if (chartAnimationEnabled) tween(durationMillis = 500) else null,
+                    animateIn = chartAnimationEnabled
             )
 
             // 图例
@@ -879,7 +903,8 @@ private fun PingChartSection(
         records: List<PingRecord>,
         isLoading: Boolean,
         selectedHours: Int,
-        onHoursChanged: (Int) -> Unit
+        onHoursChanged: (Int) -> Unit,
+        chartAnimationEnabled: Boolean = true
 ) {
     Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -993,7 +1018,9 @@ private fun PingChartSection(
                                         rememberVicoZoomState(
                                                 zoomEnabled = false,
                                                 initialZoom = Zoom.Content
-                                        )
+                                        ),
+                                animationSpec = if (chartAnimationEnabled) tween(durationMillis = 500) else null,
+                                animateIn = chartAnimationEnabled
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -1089,10 +1116,10 @@ private fun ErrorContent(error: String, onRetry: () -> Unit, modifier: Modifier 
 @Composable
 private fun rememberThemedLine(color: Color): LineCartesianLayer.Line =
         LineCartesianLayer.rememberLine(
-                fill = LineCartesianLayer.LineFill.single(fill(color)),
+                fill = LineCartesianLayer.LineFill.single(Fill(color)),
                 areaFill = LineCartesianLayer.AreaFill.single(
-                        fill(ShaderProvider.verticalGradient(
-                                arrayOf(color.copy(alpha = 0.32f), Color.Transparent)
+                        Fill(Brush.verticalGradient(
+                                listOf(color.copy(alpha = 0.32f), Color.Transparent)
                         ))
                 )
         )
@@ -1160,7 +1187,8 @@ fun LoadChartSectionPreview() {
             records = sampleRecords,
             isLoading = false,
             selectedHours = 1,
-            onHoursChanged = {}
+            onHoursChanged = {},
+            chartAnimationEnabled = false
         )
     }
 }

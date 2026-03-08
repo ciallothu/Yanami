@@ -32,6 +32,7 @@ class UserPreferencesRepository(private val context: Context) {
         private val TERMINAL_FONT_SIZE_KEY = intPreferencesKey("terminal_font_size")
         private val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
         private val AUTO_ENTER_NODELIST_KEY = booleanPreferencesKey("auto_enter_nodelist")
+        private val CHART_ANIMATION_KEY = booleanPreferencesKey("chart_animation")
         const val DEFAULT_TERMINAL_FONT_SIZE = 20
     }
 
@@ -43,7 +44,8 @@ class UserPreferencesRepository(private val context: Context) {
                         darkModeKey = prefs[DARK_MODE_KEY] ?: "system",
                         languageKey = prefs[LANGUAGE_KEY] ?: "system",
                         fontScale = prefs[FONT_SCALE_KEY] ?: 1.0f,
-                        autoEnterNodeList = prefs[AUTO_ENTER_NODELIST_KEY] ?: false
+                        autoEnterNodeList = prefs[AUTO_ENTER_NODELIST_KEY] ?: false,
+                        chartAnimationEnabled = prefs[CHART_ANIMATION_KEY] ?: true
                 )
             }
 
@@ -82,6 +84,11 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setAutoEnterNodeList(enabled: Boolean) {
         context.dataStore.edit { it[AUTO_ENTER_NODELIST_KEY] = enabled }
     }
+
+    /** 设置图表动画 */
+    suspend fun setChartAnimation(enabled: Boolean) {
+        context.dataStore.edit { it[CHART_ANIMATION_KEY] = enabled }
+    }
 }
 
 /** 用户偏好数据类 */
@@ -90,5 +97,6 @@ data class UserPreferences(
         val darkModeKey: String = "system",
         val languageKey: String = "system",
         val fontScale: Float = 1.0f,
-        val autoEnterNodeList: Boolean = false
+        val autoEnterNodeList: Boolean = false,
+        val chartAnimationEnabled: Boolean = true
 )

@@ -19,7 +19,8 @@ data class SettingsState(
         val darkMode: String = "system",
         val language: String = "system",
         val fontScale: Float = 1.0f,
-        val autoEnterNodeList: Boolean = false
+        val autoEnterNodeList: Boolean = false,
+        val chartAnimationEnabled: Boolean = true
 ) : UiState
 
 /** 设置页面 Events */
@@ -29,6 +30,7 @@ sealed interface SettingsEvent : UiEvent {
     data class SetLanguage(val lang: String) : SettingsEvent
     data class SetFontScale(val scale: Float) : SettingsEvent
     data class SetAutoEnterNodeList(val enabled: Boolean) : SettingsEvent
+    data class SetChartAnimation(val enabled: Boolean) : SettingsEvent
 }
 
 /** 设置页面 Effects */
@@ -50,7 +52,8 @@ class SettingsViewModel(private val prefsRepo: UserPreferencesRepository) :
                                 darkMode = prefs.darkModeKey,
                                 language = prefs.languageKey,
                                 fontScale = prefs.fontScale,
-                                autoEnterNodeList = prefs.autoEnterNodeList
+                                autoEnterNodeList = prefs.autoEnterNodeList,
+                                chartAnimationEnabled = prefs.chartAnimationEnabled
                         )
                     }
                 }
@@ -76,6 +79,9 @@ class SettingsViewModel(private val prefsRepo: UserPreferencesRepository) :
             }
             is SettingsEvent.SetAutoEnterNodeList -> {
                 screenModelScope.launch { prefsRepo.setAutoEnterNodeList(event.enabled) }
+            }
+            is SettingsEvent.SetChartAnimation -> {
+                screenModelScope.launch { prefsRepo.setChartAnimation(event.enabled) }
             }
         }
     }

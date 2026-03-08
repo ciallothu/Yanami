@@ -159,6 +159,10 @@
     <string name="settings_auto_enter_nodelist">Auto-enter Node List</string>
     <string name="settings_auto_enter_nodelist_desc">Skip server selection on launch</string>
 
+    <!-- Chart Animation -->
+    <string name="settings_chart_animation">Chart Animation</string>
+    <string name="settings_chart_animation_desc">Disable to improve scrolling with multiple charts</string>
+
     <!-- Update Check -->
     <string name="update_check">Check for Updates</string>
     <string name="update_check_desc">Check for new version</string>

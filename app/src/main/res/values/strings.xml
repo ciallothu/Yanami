@@ -160,6 +160,10 @@
     <string name="settings_auto_enter_nodelist">自动进入节点列表</string>
     <string name="settings_auto_enter_nodelist_desc">启动时跳过服务器选择，直接进入节点列表</string>
 
+    <!-- 图表动画 -->
+    <string name="settings_chart_animation">图表动画</string>
+    <string name="settings_chart_animation_desc">关闭后可改善多图表界面的滑动流畅度</string>
+
     <!-- 更新检查 -->
     <string name="update_check">检查更新</string>
     <string name="update_check_desc">检查是否有新版本</string>

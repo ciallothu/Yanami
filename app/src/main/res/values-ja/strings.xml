@@ -159,6 +159,10 @@
     <string name="settings_auto_enter_nodelist">自動でノードリストに移動</string>
     <string name="settings_auto_enter_nodelist_desc">起動時にサーバー選択をスキップ</string>
 
+    <!-- チャートアニメーション -->
+    <string name="settings_chart_animation">チャートアニメーション</string>
+    <string name="settings_chart_animation_desc">オフにすると複数チャートのスクロールが改善されます</string>
+
     <!-- アップデート確認 -->
     <string name="update_check">アップデートを確認</string>
     <string name="update_check_desc">新バージョンを確認</string>

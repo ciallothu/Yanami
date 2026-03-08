@@ -65,8 +65,12 @@ ServerListScreen → AddServerScreen → NodeListScreen → NodeDetailScreen
 
 - **Komari API** uses JSON-RPC 2.0 over WebSocket (`wss://domain/api/rpc2`) as primary transport, with HTTP POST fallback.
 - WebSocket requires `Origin` header — without it, server returns 403.
-- Authentication via `session_token` cookie, injected by `SessionCookieInterceptor` (OkHttp).
-- Credentials encrypted with AES/GCM via Android KeyStore (`CryptoManager`).
+- **Dual authentication modes** (`AuthType` enum):
+  - `PASSWORD`: `session_token` cookie via `POST /api/login`, injected as `Cookie: session_token=xxx`
+  - `API_KEY`: API Key used directly as `Authorization: Bearer <api-key>`, no login required
+- `SessionCookieInterceptor` (OkHttp) auto-injects the appropriate auth header based on `authType`.
+- Credentials and API Keys encrypted with AES/GCM via Android KeyStore (`CryptoManager`).
+- Room DB v3 stores `auth_type` and `encrypted_api_key` columns.
 - API details documented in `docs/API_STRUCTURES.md`.
 
 ### DI Setup

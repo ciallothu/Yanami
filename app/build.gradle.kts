@@ -53,7 +53,7 @@ android {
             isUniversalApk = true
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     packaging {
         jniLibs {
             // 让 native 库在安装时解压到磁盘，由 OS 完成对齐，

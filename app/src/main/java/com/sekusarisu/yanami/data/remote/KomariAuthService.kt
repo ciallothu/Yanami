@@ -1,6 +1,7 @@
 package com.sekusarisu.yanami.data.remote
 
 import android.util.Log
+import com.sekusarisu.yanami.BuildConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -58,6 +59,7 @@ class KomariAuthService(private val httpClient: HttpClient) {
             val response =
                     httpClient.post(url) {
                         contentType(ContentType.Application.Json)
+                        header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
                         setBody(requestBody.toString())
                     }
 
@@ -108,6 +110,7 @@ class KomariAuthService(private val httpClient: HttpClient) {
                     httpClient.post(url) {
                         contentType(ContentType.Application.Json)
                         header("Authorization", "Bearer $apiKey")
+                        header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
                         setBody(rpcRequest.toString())
                     }
 

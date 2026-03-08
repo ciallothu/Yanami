@@ -76,7 +76,7 @@ val appModule = module {
     // ─── Remote Service ───
     single { KomariAuthService(get()) }
     single { KomariRpcService(get()) }
-    single { UpdateCheckService(get()) }
+    single { UpdateCheckService() }
 
     // ─── Repository ───
     single<ServerRepository> {

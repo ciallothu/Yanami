@@ -3,14 +3,23 @@ package com.sekusarisu.yanami.data.remote
 import android.util.Log
 import com.sekusarisu.yanami.data.remote.dto.UpdateInfoDto
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
-class UpdateCheckService(private val httpClient: HttpClient) {
+class UpdateCheckService {
+
+    private val httpClient = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
+        }
+    }
 
     companion object {
         private const val TAG = "UpdateCheckService"

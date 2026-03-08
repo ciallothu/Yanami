@@ -117,8 +117,8 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_visual_style">Visual &amp; Style</string>
-    <string name="settings_visual_style_desc">Dark theme, dynamic colors, language</string>
-    <string name="settings_about_desc">GitHub, version info</string>
+    <string name="settings_visual_style_desc">Dark theme, dynamic colors, font size</string>
+    <string name="settings_about_desc">GitHub, version info, check for updates</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_theme_color">Theme Color</string>
     <string name="settings_dark_mode">Dark Mode</string>
@@ -128,6 +128,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_system">Follow System</string>
     <string name="settings_about">About</string>
+    <string name="settings_general">General</string>
     <string name="about_title">About</string>
     <string name="about_github">GitHub Repository</string>
     <string name="about_github_desc">View source code and project info</string>

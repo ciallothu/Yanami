@@ -117,8 +117,8 @@
     <!-- 設定 -->
     <string name="settings_title">設定</string>
     <string name="settings_visual_style">外観とスタイル</string>
-    <string name="settings_visual_style_desc">ダークテーマ、ダイナミックカラー、言語</string>
-    <string name="settings_about_desc">GitHub、バージョン情報</string>
+    <string name="settings_visual_style_desc">ダークテーマ、ダイナミックカラー、フォントサイズ</string>
+    <string name="settings_about_desc">GitHub、バージョン情報、アップデート</string>
     <string name="settings_appearance">外観</string>
     <string name="settings_theme_color">テーマカラー</string>
     <string name="settings_dark_mode">ダークモード</string>
@@ -128,6 +128,7 @@
     <string name="settings_language">言語</string>
     <string name="settings_language_system">システムに従う</string>
     <string name="settings_about">アプリについて</string>
+    <string name="settings_general">一般</string>
     <string name="about_title">アプリについて</string>
     <string name="about_github">GitHub リポジトリ</string>
     <string name="about_github_desc">ソースコードとプロジェクト情報</string>

@@ -29,9 +29,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -167,33 +164,6 @@ class SettingsScreen : Screen {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ── 语言 ──
-                SettingsListItem(
-                        icon = { Icon(Icons.Default.Language, contentDescription = null) },
-                        title = stringResource(R.string.settings_language)
-                ) {
-                    val languages =
-                            listOf(
-                                    "system" to stringResource(R.string.settings_language_system),
-                                    "zh" to "简体中文",
-                                    "en" to "English",
-                                    "ja" to "日本語"
-                            )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        languages.forEach { (key, label) ->
-                            FilterChip(
-                                    selected = state.language == key,
-                                    onClick = soundClick { viewModel.onEvent(SettingsEvent.SetLanguage(key)) },
-                                    label = {
-                                        Text(label, style = MaterialTheme.typography.labelMedium)
-                                    }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
                 // ── 字体大小 ──
                 SettingsListItem(
                         icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
@@ -211,32 +181,6 @@ class SettingsScreen : Screen {
                                 valueRange = 0.8f..1.4f,
                                 steps = 11,
                                 modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ── 自动进入节点列表 ──
-                SettingsListItem(
-                        icon = { Icon(Icons.Default.RocketLaunch, contentDescription = null) },
-                        title = stringResource(R.string.settings_auto_enter_nodelist)
-                ) {
-                    Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                                text = stringResource(R.string.settings_auto_enter_nodelist_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Switch(
-                                checked = state.autoEnterNodeList,
-                                onCheckedChange = { viewModel.onEvent(SettingsEvent.SetAutoEnterNodeList(it)) }
                         )
                     }
                 }

@@ -1,54 +1,57 @@
+English | [简体中文](README_zh.md)
+
 # Yanami
 
-**Yanami** 是 [Komari](https://github.com/komari-monitor/komari) 服务器监控工具的 Android 客户端，采用 Material Design 3 设计语言构建。
+**Yanami** is an Android client for the [Komari](https://github.com/komari-monitor/komari) server monitoring tool, built with the Material Design 3 design language.
 
 > A Material Design 3 Android client for the Komari server monitoring tool.
 
 ---
 
-## 功能特性
+## Features
 
-- **多实例管理** — 添加、编辑、切换多个 Komari 服务端实例
-- **实时节点列表** — WebSocket 实时推送节点状态（CPU / RAM / 磁盘 / 网络 IO）
-- **节点详情看板** — 负载历史折线图、Ping 延迟趋势、服务器基础信息
-- **SSH 终端** — 基于 Terminal-view + WebSocket 的全功能 ANSI/VT100 终端，支持特殊按键工具栏与字号调整
-- **多语言** — 中文（默认）、English、日本語
-- **主题系统** — Material You 动态取色（Android 12+）+ 6 种预设配色，支持深色/浅色/跟随系统
+- **Multi-Instance Management** — Add, edit, and switch between multiple Komari server instances.
+- **Password or API-KEY Authentication** — Support password or API-KEY authentication.
+- **Real-Time Node List** — WebSocket real-time push for node status (CPU / RAM / Disk / Network IO).
+- **Node Detail Dashboard** — Load history line charts, Ping latency trends, basic server information.
+- **SSH Terminal** — Full-featured ANSI/VT100 terminal based on termux terminal-view + WebSocket, supporting special key toolbars and font size adjustment.
+- **Multi-Language Support** — Chinese (Default), English, Japanese.
+- **Theme System** — Material You dynamic colors (Android 12+) + 6 preset color palettes, supporting dark/light mode and system-following mode.
 
-## 截图
+## Screenshots
 
-### 实例管理
+### Instance Management
 
 <p style="text-align: center;">
     <img alt="desktop" src="assets/addserver.png" width="360"> <img alt="desktop" src="assets/serverlist.png" width="360">
 </p>
 
-### 日间/浅色模式
+### Day/Light Mode
 
 <p style="text-align: center;">
     <img alt="desktop" src="assets/nodelist.png" width="360"> <img alt="desktop" src="assets/nodedetail1.png" width="360">
 </p>
 
-### 夜间/深色模式
+### Night/Dark Mode
 
 <p style="text-align: center;">
     <img alt="desktop" src="assets/nodelistdark.png" width="360"> <img alt="desktop" src="assets/nodedetaildark.png" width="360">
 </p>
 
-### 延迟监测/SSH终端
+### Latency Monitoring/SSH Terminal
 
 <p style="text-align: center;">
     <img alt="desktop" src="assets/nodedetail2.png" width="360"> <img alt="desktop" src="assets/nodeterminal.png" width="360">
 </p>
 
-## 系统要求
+## System Requirements
 
-| 项目 | 要求 |
+| Item | Requirement |
 |---|---|
-| Android | 9.0（API 28）及以上 |
-| 服务端 | Komari |
+| Android | 9.0 (API 28) and above |
+| Server | Komari 1.1.7 or above |
 
-## 构建
+## Build
 
 ```bash
 # Debug APK
@@ -57,40 +60,40 @@
 # Release APK
 ./gradlew assembleRelease
 
-# 清理后构建
+# Clean and Build
 ./gradlew clean assembleDebug
 ```
 
-构建产物位于 `app/build/outputs/apk/`。
+Build outputs are located at `app/build/outputs/apk/`.
 
-## 技术栈
+## Tech Stack
 
-| 库 | 版本 | 用途 |
+| Library | Version | Purpose |
 |---|---|---|
-| Kotlin | 2.3.10 | 主语言 |
-| Jetpack Compose BOM | 2026.02.00 | UI 框架 |
-| MD3 | — | 设计系统 |
-| Voyager | 1.1.0-beta03 | 导航 + ScreenModel |
-| Koin | 4.1.1 | 依赖注入 |
-| Ktor | 3.4.0 | HTTP 客户端 + WebSocket |
-| Room | 2.8.4 | 本地数据库（加密凭据存储） |
-| Vico | 2.2.0 | 图表（Compose M3） |
-| termux terminal-view | 0.119.0-beta.3 | 终端 ANSI/VT100 渲染 |
-| DataStore Preferences | 1.2.0 | 用户偏好持久化 |
+| Kotlin | 2.3.10 | Main language |
+| Jetpack Compose BOM | 2026.02.01 | UI Framework |
+| MD3 | — | Design System |
+| Voyager | 1.1.0-beta03 | Navigation + ScreenModel |
+| Koin | 4.1.1 | Dependency Injection |
+| Ktor | 3.4.1 | HTTP Client + WebSocket |
+| Room | 2.8.4 | Local Database (Encrypted credential storage) |
+| Vico | 3.0.4 | Charts (Compose M3) |
+| termux terminal-view | 0.119.0-beta.3 | Terminal ANSI/VT100 Rendering |
+| DataStore Preferences | 1.2.0 | User Preferences Persistence |
 
-## 架构
+## Architecture
 
-采用 **MVI（Model-View-Intent）** 模式，分三层：
+Adopts the **MVI (Model-View-Intent)** pattern, separated into three layers:
 
 ```
 UI Layer      Voyager Screen + Compose UI + MviViewModel<State, Event, Effect>
-Domain Layer  Repository 接口 + 领域模型（Node, ServerInstance …）
-Data Layer    Repository 实现、Ktor、Room、DataStore
+Domain Layer  Repository Interface + Domain Model (Node, ServerInstance …)
+Data Layer    Repository Implementation, Ktor, Room, DataStore
 ```
 
-每个页面遵循 **Contract 模式**，以嵌套的 `State` / `Event` / `Effect` 描述该页面的完整 MVI 契约。
+Each page follows the **Contract Pattern**, describing the complete MVI contract of the page with nested `State` / `Event` / `Effect`.
 
-### 导航流
+### Navigation Flow
 
 ```
 ServerListScreen → AddServerScreen
@@ -98,13 +101,13 @@ ServerListScreen → AddServerScreen
                  → SettingsScreen
 ```
 
-### 认证与网络
+### Authentication & Network
 
-- 通过 `POST /api/login` 获取 `session_token`（支持 2FA）
-- Token 以 AES/GCM 加密后存入 Room，启动时自动恢复
-- WebSocket (`wss://host/api/rpc2`) 需携带 `Cookie: session_token` 及 `Origin` 头
-- `SessionCookieInterceptor`（OkHttp）自动注入 Cookie
+- Obtain `session_token` via `POST /api/login` (supports 2FA).
+- Token is encrypted with AES/GCM and stored in Room, automatically restored on startup.
+- WebSocket (`wss://host/api/rpc2`) requires `Cookie: session_token` and `Origin` headers.
+- `SessionCookieInterceptor` (OkHttp) automatically injects the Cookie.
 
-## 许可证
+## License
 
-本项目遵循 [MIT License](LICENSE)。
+This project is licensed under the [MIT License](LICENSE).

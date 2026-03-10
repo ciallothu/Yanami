@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -15,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.core.content.ContextCompat
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
@@ -58,6 +61,9 @@ class MainActivity : AppCompatActivity() {
 
             // 解析初始导航栈
             var initialScreens by remember { mutableStateOf<List<Screen>?>(null) }
+            // 生物识别通过标志（未启用时直接为 true）
+            var authReady by remember { mutableStateOf(false) }
+
             LaunchedEffect(Unit) {
                 val initPrefs = prefsRepo.preferencesFlow.first()
                 val screens = if (initPrefs.autoEnterNodeList) {
@@ -71,6 +77,25 @@ class MainActivity : AppCompatActivity() {
                     listOf(ServerListScreen())
                 }
                 initialScreens = screens
+
+                if (!initPrefs.biometricEnabled) {
+                    authReady = true
+                } else {
+                    val biometricManager = BiometricManager.from(this@MainActivity)
+                    val canAuth = biometricManager.canAuthenticate(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                    )
+                    if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
+                        showBiometricPrompt(
+                            onSuccess = { authReady = true },
+                            onError = { finish() }
+                        )
+                    } else {
+                        // 设备不支持或未注册凭据，放行
+                        authReady = true
+                    }
+                }
 
                 // 静默检查更新
                 val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -90,11 +115,36 @@ class MainActivity : AppCompatActivity() {
                 )
                 CompositionLocalProvider(LocalDensity provides adjustedDensity) {
                     val screens = initialScreens
-                    if (screens != null) {
+                    if (screens != null && authReady) {
                         Navigator(screens) { navigator -> SlideTransition(navigator) }
                     }
                 }
             }
         }
+    }
+
+    private fun showBiometricPrompt(onSuccess: () -> Unit, onError: () -> Unit) {
+        val executor = ContextCompat.getMainExecutor(this)
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                onSuccess()
+            }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                onError()
+            }
+            override fun onAuthenticationFailed() {
+                // 生物识别不匹配，弹窗保持打开，不关闭应用
+            }
+        }
+        val biometricPrompt = BiometricPrompt(this, executor, callback)
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(getString(R.string.biometric_prompt_title))
+            .setSubtitle(getString(R.string.biometric_prompt_subtitle))
+            .setAllowedAuthenticators(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            )
+            .build()
+        biometricPrompt.authenticate(promptInfo)
     }
 }

@@ -116,6 +116,7 @@ dependencies {
 
     // Security
     implementation(libs.security.crypto)
+    implementation(libs.biometric)
 
     // DataStore Preferences
     implementation(libs.datastore.preferences)

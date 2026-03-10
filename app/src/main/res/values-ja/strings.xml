@@ -129,6 +129,8 @@
     <string name="settings_language_system">システムに従う</string>
     <string name="settings_about">アプリについて</string>
     <string name="settings_general">一般</string>
+    <string name="settings_ui">UIと言語</string>
+    <string name="settings_others">その他</string>
     <string name="about_title">アプリについて</string>
     <string name="about_github">GitHub リポジトリ</string>
     <string name="about_github_desc">ソースコードとプロジェクト情報</string>
@@ -162,6 +164,13 @@
     <!-- チャートアニメーション -->
     <string name="settings_chart_animation">チャートアニメーション</string>
     <string name="settings_chart_animation_desc">オフにすると複数チャートのスクロールが改善されます</string>
+
+    <!-- 安全 -->
+    <string name="settings_security">セキュリティ</string>
+    <string name="settings_biometric">生体認証</string>
+    <string name="settings_biometric_desc">有効にすると生体認証またはデバイスパスワードが必要です</string>
+    <string name="biometric_prompt_title">認証</string>
+    <string name="biometric_prompt_subtitle">生体認証またはデバイスパスワードで認証してください</string>
 
     <!-- アップデート確認 -->
     <string name="update_check">アップデートを確認</string>

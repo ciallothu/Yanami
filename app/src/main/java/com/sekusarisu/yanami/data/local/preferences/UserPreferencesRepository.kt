@@ -33,6 +33,7 @@ class UserPreferencesRepository(private val context: Context) {
         private val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
         private val AUTO_ENTER_NODELIST_KEY = booleanPreferencesKey("auto_enter_nodelist")
         private val CHART_ANIMATION_KEY = booleanPreferencesKey("chart_animation")
+        private val BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("biometric_enabled")
         const val DEFAULT_TERMINAL_FONT_SIZE = 20
     }
 
@@ -45,7 +46,8 @@ class UserPreferencesRepository(private val context: Context) {
                         languageKey = prefs[LANGUAGE_KEY] ?: "system",
                         fontScale = prefs[FONT_SCALE_KEY] ?: 1.0f,
                         autoEnterNodeList = prefs[AUTO_ENTER_NODELIST_KEY] ?: false,
-                        chartAnimationEnabled = prefs[CHART_ANIMATION_KEY] ?: true
+                        chartAnimationEnabled = prefs[CHART_ANIMATION_KEY] ?: true,
+                        biometricEnabled = prefs[BIOMETRIC_ENABLED_KEY] ?: false
                 )
             }
 
@@ -89,6 +91,11 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setChartAnimation(enabled: Boolean) {
         context.dataStore.edit { it[CHART_ANIMATION_KEY] = enabled }
     }
+
+    /** 设置生物识别锁 */
+    suspend fun setBiometricEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[BIOMETRIC_ENABLED_KEY] = enabled }
+    }
 }
 
 /** 用户偏好数据类 */
@@ -98,5 +105,6 @@ data class UserPreferences(
         val languageKey: String = "system",
         val fontScale: Float = 1.0f,
         val autoEnterNodeList: Boolean = false,
-        val chartAnimationEnabled: Boolean = true
+        val chartAnimationEnabled: Boolean = true,
+        val biometricEnabled: Boolean = false
 )

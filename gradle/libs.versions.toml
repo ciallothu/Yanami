@@ -1,15 +1,15 @@
 [versions]
 # Core Android
-agp = "9.0.1"
+agp = "9.1.0"
 kotlin = "2.3.10"
 ksp = "2.3.5"
-coreKtx = "1.16.0"
-appcompat = "1.7.0"
+coreKtx = "1.17.0"
+appcompat = "1.7.1"
 
 # Compose
-composeBom = "2026.02.00"
-activityCompose = "1.10.1"
-lifecycleRuntimeKtx = "2.9.0"
+composeBom = "2026.02.01"
+activityCompose = "1.12.4"
+lifecycleRuntimeKtx = "2.10.0"
 
 # Navigation
 voyager = "1.1.0-beta03"
@@ -18,7 +18,7 @@ voyager = "1.1.0-beta03"
 koinBom = "4.1.1"
 
 # Network
-ktor = "3.4.0"
+ktor = "3.4.1"
 
 # Serialization
 kotlinxSerialization = "1.10.0"
@@ -30,7 +30,8 @@ room = "2.8.4"
 vico = "3.0.3"
 
 # Security
-securityCrypto = "1.1.0-alpha06"
+securityCrypto = "1.1.0"
+biometric = "1.1.0"
 datastorePreferences = "1.2.0"
 
 # Testing
@@ -92,6 +93,7 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 
 # Security
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 
 # Testing

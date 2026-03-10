@@ -15,8 +15,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Animation
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.AlertDialog
@@ -104,6 +106,21 @@ class SettingsHubScreen : Screen {
                     onCheckedChange = { viewModel.onEvent(SettingsEvent.SetAutoEnterNodeList(it)) }
                 )
 
+                // ── 分组标题: 安全 ──
+                SectionHeader(title = stringResource(R.string.settings_security))
+
+                // ── 生物识别 ──
+                SettingsToggleItem(
+                    icon = Icons.Default.Fingerprint,
+                    title = stringResource(R.string.settings_biometric),
+                    subtitle = stringResource(R.string.settings_biometric_desc),
+                    checked = state.biometricEnabled,
+                    onCheckedChange = { viewModel.onEvent(SettingsEvent.SetBiometricEnabled(it)) }
+                )
+
+                // ── 分组标题: UI ──
+                SectionHeader(title = stringResource(R.string.settings_ui))
+
                 // ── 图表动画 ──
                 SettingsToggleItem(
                     icon = Icons.Default.Animation,
@@ -113,7 +130,7 @@ class SettingsHubScreen : Screen {
                     onCheckedChange = { viewModel.onEvent(SettingsEvent.SetChartAnimation(it)) }
                 )
 
-                // ── 导航项 ──
+                // ── 视觉与样式 ──
                 SettingsNavItem(
                         icon = Icons.Default.Palette,
                         title = stringResource(R.string.settings_visual_style),
@@ -128,6 +145,9 @@ class SettingsHubScreen : Screen {
                     subtitle = currentLanguageLabel,
                     onClick = soundClick { showLanguageDialog = true }
                 )
+
+                // ── 分组标题: 其他 ──
+                SectionHeader(title = stringResource(R.string.settings_others))
 
                 // ── 关于 ──
                 SettingsNavItem(

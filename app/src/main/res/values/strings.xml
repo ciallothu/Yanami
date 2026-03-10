@@ -129,6 +129,8 @@
     <string name="settings_language_system">跟随系统</string>
     <string name="settings_about">关于</string>
     <string name="settings_general">通用</string>
+    <string name="settings_ui">界面和语言</string>
+    <string name="settings_others">其他</string>
     <string name="about_title">关于</string>
     <string name="about_github">GitHub 仓库</string>
     <string name="about_github_desc">查看源代码与项目信息</string>
@@ -163,6 +165,13 @@
     <!-- 图表动画 -->
     <string name="settings_chart_animation">图表动画</string>
     <string name="settings_chart_animation_desc">关闭后可改善多图表界面的滑动流畅度</string>
+
+    <!-- 安全 -->
+    <string name="settings_security">安全</string>
+    <string name="settings_biometric">生物识别锁</string>
+    <string name="settings_biometric_desc">启用后每次打开应用需通过生物识别或设备密码验证</string>
+    <string name="biometric_prompt_title">身份验证</string>
+    <string name="biometric_prompt_subtitle">请通过生物识别或设备密码以继续</string>
 
     <!-- 更新检查 -->
     <string name="update_check">检查更新</string>

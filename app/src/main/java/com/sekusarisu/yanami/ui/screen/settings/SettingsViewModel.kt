@@ -20,7 +20,8 @@ data class SettingsState(
         val language: String = "system",
         val fontScale: Float = 1.0f,
         val autoEnterNodeList: Boolean = false,
-        val chartAnimationEnabled: Boolean = true
+        val chartAnimationEnabled: Boolean = true,
+        val biometricEnabled: Boolean = false
 ) : UiState
 
 /** 设置页面 Events */
@@ -31,6 +32,7 @@ sealed interface SettingsEvent : UiEvent {
     data class SetFontScale(val scale: Float) : SettingsEvent
     data class SetAutoEnterNodeList(val enabled: Boolean) : SettingsEvent
     data class SetChartAnimation(val enabled: Boolean) : SettingsEvent
+    data class SetBiometricEnabled(val enabled: Boolean) : SettingsEvent
 }
 
 /** 设置页面 Effects */
@@ -53,7 +55,8 @@ class SettingsViewModel(private val prefsRepo: UserPreferencesRepository) :
                                 language = prefs.languageKey,
                                 fontScale = prefs.fontScale,
                                 autoEnterNodeList = prefs.autoEnterNodeList,
-                                chartAnimationEnabled = prefs.chartAnimationEnabled
+                                chartAnimationEnabled = prefs.chartAnimationEnabled,
+                                biometricEnabled = prefs.biometricEnabled
                         )
                     }
                 }
@@ -82,6 +85,9 @@ class SettingsViewModel(private val prefsRepo: UserPreferencesRepository) :
             }
             is SettingsEvent.SetChartAnimation -> {
                 screenModelScope.launch { prefsRepo.setChartAnimation(event.enabled) }
+            }
+            is SettingsEvent.SetBiometricEnabled -> {
+                screenModelScope.launch { prefsRepo.setBiometricEnabled(event.enabled) }
             }
         }
     }

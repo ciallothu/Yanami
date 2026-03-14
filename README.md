@@ -44,6 +44,12 @@ English | [简体中文](README_zh.md)
     <img alt="desktop" src="assets/nodedetail2.png" width="360"> <img alt="desktop" src="assets/nodeterminal.png" width="360">
 </p>
 
+### Widget
+
+<p style="text-align: center;">
+    <img alt="desktop" src="assets/widget.png" width="360"> <img alt="desktop" src="assets/widgetdark.png" width="360">
+</p>
+
 ## System Requirements
 
 | Item | Requirement |

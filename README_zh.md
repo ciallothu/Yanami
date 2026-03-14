@@ -44,6 +44,12 @@
     <img alt="desktop" src="assets/nodedetail2.png" width="360"> <img alt="desktop" src="assets/nodeterminal.png" width="360">
 </p>
 
+### 桌面小部件
+
+<p style="text-align: center;">
+    <img alt="desktop" src="assets/widget.png" width="360"> <img alt="desktop" src="assets/widgetdark.png" width="360">
+</p>
+
 ## 系统要求
 
 | 项目 | 要求 |

@@ -8,6 +8,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,7 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
 import androidx.core.content.ContextCompat
 import cafe.adriel.voyager.core.screen.Screen
@@ -25,8 +40,16 @@ import com.sekusarisu.yanami.data.local.preferences.UserPreferences
 import com.sekusarisu.yanami.data.local.preferences.UserPreferencesRepository
 import com.sekusarisu.yanami.data.remote.UpdateCheckService
 import com.sekusarisu.yanami.domain.repository.ServerRepository
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
+import com.sekusarisu.yanami.ui.screen.nodedetail.NodeDetailScreen
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
+import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
+import com.sekusarisu.yanami.ui.screen.server.ServerReLoginScreen
+import com.sekusarisu.yanami.ui.screen.settings.AboutScreen
+import com.sekusarisu.yanami.ui.screen.settings.SettingsHubScreen
+import com.sekusarisu.yanami.ui.screen.settings.SettingsScreen
+import com.sekusarisu.yanami.ui.screen.terminal.SshTerminalScreen
 import com.sekusarisu.yanami.ui.theme.ThemeColor
 import com.sekusarisu.yanami.ui.theme.YanamiTheme
 import kotlinx.coroutines.flow.first
@@ -116,7 +139,57 @@ class MainActivity : AppCompatActivity() {
                 CompositionLocalProvider(LocalDensity provides adjustedDensity) {
                     val screens = initialScreens
                     if (screens != null && authReady) {
-                        Navigator(screens) { navigator -> SlideTransition(navigator) }
+                        Navigator(screens) { navigator ->
+                            val adaptiveInfo = rememberAdaptiveLayoutInfo()
+                            val currentScreen = navigator.lastItem
+                            var hasActiveServer by remember { mutableStateOf(false) }
+
+                            LaunchedEffect(currentScreen) {
+                                hasActiveServer = serverRepo.getActive() != null
+                            }
+
+                            if (adaptiveInfo.isTabletLandscape) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                ) {
+                                    MainNavigationRail(
+                                            currentScreen = currentScreen,
+                                            hasActiveServer = hasActiveServer,
+                                            onServersClick = {
+                                                navigator.replaceAll(ServerListScreen())
+                                            },
+                                            onNodesClick = {
+                                                if (hasActiveServer) {
+                                                    navigator.replaceAll(
+                                                            listOf(
+                                                                    ServerListScreen(),
+                                                                    NodeListScreen()
+                                                            )
+                                                    )
+                                                }
+                                            },
+                                            onSettingsClick = {
+                                                navigator.replaceAll(
+                                                        listOf(
+                                                                ServerListScreen(),
+                                                                SettingsHubScreen()
+                                                        )
+                                                )
+                                            }
+                                    )
+                                    Box(
+                                            modifier =
+                                                    Modifier.weight(1f)
+                                                            .fillMaxHeight()
+                                    ) {
+                                        SlideTransition(navigator)
+                                    }
+                                }
+                            } else {
+                                SlideTransition(navigator)
+                            }
+                        }
                     }
                 }
             }
@@ -146,5 +219,56 @@ class MainActivity : AppCompatActivity() {
             )
             .build()
         biometricPrompt.authenticate(promptInfo)
+    }
+}
+
+private enum class MainRailDestination {
+    SERVERS,
+    NODES,
+    SETTINGS
+}
+
+private fun resolveMainRailDestination(screen: Screen): MainRailDestination =
+        when (screen) {
+            is NodeListScreen, is NodeDetailScreen, is SshTerminalScreen -> MainRailDestination.NODES
+            is SettingsHubScreen, is SettingsScreen, is AboutScreen -> MainRailDestination.SETTINGS
+            is ServerListScreen, is AddServerScreen, is ServerReLoginScreen -> MainRailDestination.SERVERS
+            else -> MainRailDestination.SERVERS
+        }
+
+@Composable
+private fun MainNavigationRail(
+        currentScreen: Screen,
+        hasActiveServer: Boolean,
+        onServersClick: () -> Unit,
+        onNodesClick: () -> Unit,
+        onSettingsClick: () -> Unit
+) {
+    val selectedDestination = resolveMainRailDestination(currentScreen)
+    NavigationRail(
+        modifier = Modifier
+            .fillMaxHeight()
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+        NavigationRailItem(
+                selected = selectedDestination == MainRailDestination.SERVERS,
+                onClick = onServersClick,
+                icon = { androidx.compose.material3.Icon(Icons.Default.Dns, contentDescription = null) },
+                label = { Text(stringResource(R.string.server_management)) }
+        )
+        NavigationRailItem(
+                selected = selectedDestination == MainRailDestination.NODES,
+                onClick = onNodesClick,
+                enabled = hasActiveServer,
+                icon = { androidx.compose.material3.Icon(Icons.Default.Storage, contentDescription = null) },
+                label = { Text(stringResource(R.string.node_list)) }
+        )
+        NavigationRailItem(
+                selected = selectedDestination == MainRailDestination.SETTINGS,
+                onClick = onSettingsClick,
+                icon = { androidx.compose.material3.Icon(Icons.Default.Settings, contentDescription = null) },
+                label = { Text(stringResource(R.string.settings_title)) }
+        )
+        Spacer(modifier = Modifier.weight(1f))
     }
 }

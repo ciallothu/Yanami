@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -67,6 +69,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.nodedetail.NodeDetailScreen
 import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
@@ -87,6 +91,7 @@ class NodeListScreen : Screen {
         val state by viewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         // 全局展开/收缩状态
         var isAllExpanded by remember { mutableStateOf(true) }
@@ -181,7 +186,8 @@ class NodeListScreen : Screen {
                         NodeListContent(
                                 state = state,
                                 viewModel = viewModel,
-                                isAllExpanded = isAllExpanded
+                                isAllExpanded = isAllExpanded,
+                                isTabletLandscape = adaptiveInfo.isTabletLandscape
                         )
                     }
                 }
@@ -196,7 +202,8 @@ class NodeListScreen : Screen {
 private fun NodeListContent(
         state: NodeListContract.State,
         viewModel: NodeListViewModel,
-        isAllExpanded: Boolean
+        isAllExpanded: Boolean,
+        isTabletLandscape: Boolean
 ) {
     // 构建分组列表（null 表示"全部"）
     val allGroups: List<String?> = listOf(null) + state.groups
@@ -238,74 +245,79 @@ private fun NodeListContent(
                 Modifier
             }
 
-    LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp).then(swipeModifier),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    AdaptiveContentPane(
+            modifier = Modifier.then(swipeModifier),
+            maxWidth = if (isTabletLandscape) 1400.dp else 920.dp
     ) {
-        // 搜索栏
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            SearchBar(
-                    query = state.searchQuery,
-                    onQueryChange = {
-                        viewModel.onEvent(NodeListContract.Event.SearchQueryChanged(it))
-                    }
-            )
-        }
-
-        // 总览卡片
-        item {
-            OverviewCard(
-                    onlineCount = state.onlineCount,
-                    offlineCount = state.offlineCount,
-                    totalCount = state.totalCount,
-                    totalNetIn = state.totalNetIn,
-                    totalNetOut = state.totalNetOut,
-                    totalTrafficUp = state.totalTrafficUp,
-                    totalTrafficDown = state.totalTrafficDown,
-                    statusFilter = state.statusFilter,
-                    onStatusFilterSelected = {
-                        viewModel.onEvent(NodeListContract.Event.StatusFilterSelected(it))
-                    }
-            )
-        }
-
-        // 分组筛选
-        if (state.groups.isNotEmpty()) {
-            item {
-                GroupFilterRow(
-                        groups = state.groups,
-                        selectedGroup = state.selectedGroup,
-                        onGroupSelected = {
-                            viewModel.onEvent(NodeListContract.Event.GroupSelected(it))
+        LazyVerticalGrid(
+                columns =
+                        if (isTabletLandscape) GridCells.Adaptive(minSize = 360.dp)
+                        else GridCells.Fixed(1),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(modifier = Modifier.height(4.dp))
+                SearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = {
+                            viewModel.onEvent(NodeListContract.Event.SearchQueryChanged(it))
                         }
                 )
             }
-        }
 
-        // 节点列表
-        if (state.filteredNodes.isEmpty()) {
-            item {
-                EmptyNodeList(
-                        hasSearchQuery = state.searchQuery.isNotBlank(),
-                        hasGroupFilter = state.selectedGroup != null,
-                        hasStatusFilter = state.statusFilter != NodeListContract.StatusFilter.ALL
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                OverviewCard(
+                        onlineCount = state.onlineCount,
+                        offlineCount = state.offlineCount,
+                        totalCount = state.totalCount,
+                        totalNetIn = state.totalNetIn,
+                        totalNetOut = state.totalNetOut,
+                        totalTrafficUp = state.totalTrafficUp,
+                        totalTrafficDown = state.totalTrafficDown,
+                        statusFilter = state.statusFilter,
+                        onStatusFilterSelected = {
+                            viewModel.onEvent(NodeListContract.Event.StatusFilterSelected(it))
+                        }
                 )
             }
-        } else {
-            items(state.filteredNodes, key = { it.uuid }) { node ->
-                NodeCard(
-                        node = node,
-                        onClick = soundClick {
-                            viewModel.onEvent(NodeListContract.Event.NodeClicked(node.uuid))
-                        },
-                        isExpanded = isAllExpanded
-                )
-            }
-        }
 
-        // 底部间距
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+            if (state.groups.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    GroupFilterRow(
+                            groups = state.groups,
+                            selectedGroup = state.selectedGroup,
+                            onGroupSelected = {
+                                viewModel.onEvent(NodeListContract.Event.GroupSelected(it))
+                            }
+                    )
+                }
+            }
+
+            if (state.filteredNodes.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyNodeList(
+                            hasSearchQuery = state.searchQuery.isNotBlank(),
+                            hasGroupFilter = state.selectedGroup != null,
+                            hasStatusFilter =
+                                    state.statusFilter != NodeListContract.StatusFilter.ALL
+                    )
+                }
+            } else {
+                items(state.filteredNodes, key = { it.uuid }) { node ->
+                    NodeCard(
+                            node = node,
+                            onClick = soundClick {
+                                viewModel.onEvent(NodeListContract.Event.NodeClicked(node.uuid))
+                            },
+                            isExpanded = isAllExpanded
+                    )
+                }
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(modifier = Modifier.height(16.dp)) }
+        }
     }
 }
 
@@ -353,132 +365,107 @@ private fun OverviewCard(
         statusFilter: NodeListContract.StatusFilter = NodeListContract.StatusFilter.ALL,
         onStatusFilterSelected: (NodeListContract.StatusFilter) -> Unit = {}
 ) {
+    val adaptiveInfo = rememberAdaptiveLayoutInfo()
     Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
             tonalElevation = 1.dp
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            // 节点统计行
+        if (adaptiveInfo.isTabletLandscape) {
             Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
             ) {
                 StatItem(
                         label = stringResource(R.string.node_stat_total),
                         value = totalCount.toString(),
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        isSelected = false,
-                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ALL) }
+                        isSelected = statusFilter == NodeListContract.StatusFilter.ALL,
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ALL) },
+                        modifier = Modifier.weight(1f)
                 )
                 StatItem(
                         label = stringResource(R.string.node_stat_online),
                         value = onlineCount.toString(),
                         color = MaterialTheme.colorScheme.primary,
                         isSelected = statusFilter == NodeListContract.StatusFilter.ONLINE,
-                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ONLINE) }
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ONLINE) },
+                        modifier = Modifier.weight(1f)
                 )
                 StatItem(
                         label = stringResource(R.string.node_stat_offline),
                         value = offlineCount.toString(),
                         color = MaterialTheme.colorScheme.error,
                         isSelected = statusFilter == NodeListContract.StatusFilter.OFFLINE,
-                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.OFFLINE) }
+                        onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.OFFLINE) },
+                        modifier = Modifier.weight(1f)
+                )
+                OverviewMetricItem(
+                        label = stringResource(R.string.node_net_speed),
+                        primaryText = "↑ ${formatSpeed(totalNetOut)}",
+                        secondaryText = "↓ ${formatSpeed(totalNetIn)}",
+                        modifier = Modifier.weight(1.35f)
+                )
+                OverviewMetricItem(
+                        label = stringResource(R.string.node_net_traffic),
+                        primaryText = "↑ ${formatBytes(totalTrafficUp)}",
+                        secondaryText = "↓ ${formatBytes(totalTrafficDown)}",
+                        modifier = Modifier.weight(1.55f)
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 网络信息：纵列布局 — 实时速度一列 + 总流量一列
-            Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.Top
-            ) {
-                // 实时速度列
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                            text = stringResource(R.string.node_net_speed),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        } else {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatItem(
+                            label = stringResource(R.string.node_stat_total),
+                            value = totalCount.toString(),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            isSelected = false,
+                            onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ALL) }
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                                Icons.Default.ArrowUpward,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                                text = formatSpeed(totalNetOut),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                                Icons.Default.ArrowDownward,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.secondary
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                                text = formatSpeed(totalNetIn),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                    StatItem(
+                            label = stringResource(R.string.node_stat_online),
+                            value = onlineCount.toString(),
+                            color = MaterialTheme.colorScheme.primary,
+                            isSelected = statusFilter == NodeListContract.StatusFilter.ONLINE,
+                            onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.ONLINE) }
+                    )
+                    StatItem(
+                            label = stringResource(R.string.node_stat_offline),
+                            value = offlineCount.toString(),
+                            color = MaterialTheme.colorScheme.error,
+                            isSelected = statusFilter == NodeListContract.StatusFilter.OFFLINE,
+                            onClick = soundClick { onStatusFilterSelected(NodeListContract.StatusFilter.OFFLINE) }
+                    )
                 }
 
-                // 总流量列
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                            text = stringResource(R.string.node_net_traffic),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.Top
+                ) {
+                    OverviewMetricItem(
+                            label = stringResource(R.string.node_net_speed),
+                            primaryText = "↑ ${formatSpeed(totalNetOut)}",
+                            secondaryText = "↓ ${formatSpeed(totalNetIn)}"
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                                Icons.Default.ArrowUpward,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                                text = formatBytes(totalTrafficUp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                                Icons.Default.ArrowDownward,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.secondary
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                                text = formatBytes(totalTrafficDown),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                    OverviewMetricItem(
+                            label = stringResource(R.string.node_net_traffic),
+                            primaryText = "↑ ${formatBytes(totalTrafficUp)}",
+                            secondaryText = "↓ ${formatBytes(totalTrafficDown)}"
+                    )
                 }
             }
         }
@@ -491,12 +478,13 @@ private fun StatItem(
         value: String,
         color: androidx.compose.ui.graphics.Color,
         isSelected: Boolean = false,
-        onClick: (() -> Unit)? = null
+        onClick: (() -> Unit)? = null,
+        modifier: Modifier = Modifier
 ) {
     val bgColor =
             if (isSelected) color.copy(alpha = 0.15f)
             else androidx.compose.ui.graphics.Color.Transparent
-    val modifier =
+    val contentModifier =
             if (onClick != null) {
                 Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -506,7 +494,10 @@ private fun StatItem(
             } else {
                 Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             }
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+            modifier = modifier.then(contentModifier),
+            horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
@@ -517,6 +508,37 @@ private fun StatItem(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
                 color = color.copy(alpha = 0.8f)
+        )
+    }
+}
+
+@Composable
+private fun OverviewMetricItem(
+        label: String,
+        primaryText: String,
+        secondaryText: String,
+        modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+                text = primaryText,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+                text = secondaryText,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1
         )
     }
 }

@@ -46,6 +46,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 
 class AboutScreen : Screen {
@@ -59,6 +61,7 @@ class AboutScreen : Screen {
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         val viewModel = koinScreenModel<AboutViewModel>()
         val state by viewModel.state.collectAsState()
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -93,34 +96,37 @@ class AboutScreen : Screen {
                     )
                 }
         ) { innerPadding ->
-            LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+            AdaptiveContentPane(
+                    modifier = Modifier.padding(innerPadding),
+                    maxWidth = if (adaptiveInfo.isTabletLandscape) 860.dp else 760.dp
             ) {
-                item {
-                    AboutItem(
-                            icon = Icons.Default.Code,
-                            title = stringResource(R.string.about_github),
-                            subtitle = stringResource(R.string.about_github_desc),
-                            onClick = soundClick {
-                                uriHandler.openUri("https://github.com/icylian/Yanami")
-                            }
-                    )
-                }
-                item {
-                    AboutItem(
-                            icon = Icons.Default.Info,
-                            title = stringResource(R.string.about_version),
-                            subtitle = state.currentVersionName
-                    )
-                }
-                item {
-                    AboutItemWithLoading(
-                            icon = Icons.Default.SystemUpdateAlt,
-                            title = stringResource(R.string.update_check),
-                            subtitle = stringResource(R.string.update_check_desc),
-                            isLoading = state.isCheckingUpdate,
-                            onClick = soundClick { viewModel.onEvent(AboutEvent.CheckForUpdate) }
-                    )
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item {
+                        AboutItem(
+                                icon = Icons.Default.Code,
+                                title = stringResource(R.string.about_github),
+                                subtitle = stringResource(R.string.about_github_desc),
+                                onClick = soundClick {
+                                    uriHandler.openUri("https://github.com/icylian/Yanami")
+                                }
+                        )
+                    }
+                    item {
+                        AboutItem(
+                                icon = Icons.Default.Info,
+                                title = stringResource(R.string.about_version),
+                                subtitle = state.currentVersionName
+                        )
+                    }
+                    item {
+                        AboutItemWithLoading(
+                                icon = Icons.Default.SystemUpdateAlt,
+                                title = stringResource(R.string.update_check),
+                                subtitle = stringResource(R.string.update_check_desc),
+                                isLoading = state.isCheckingUpdate,
+                                onClick = soundClick { viewModel.onEvent(AboutEvent.CheckForUpdate) }
+                        )
+                    }
                 }
             }
         }

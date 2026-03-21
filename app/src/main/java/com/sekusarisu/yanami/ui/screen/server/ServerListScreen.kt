@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -56,7 +58,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.ServerInstance
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.settings.SettingsHubScreen
 import com.sekusarisu.yanami.ui.screen.soundClick
 
@@ -74,6 +78,7 @@ class ServerListScreen : Screen {
         val state by viewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         // 处理副作用
         LaunchedEffect(Unit) {
@@ -129,7 +134,12 @@ class ServerListScreen : Screen {
                     ) { CircularProgressIndicator() }
                 }
                 state.servers.isEmpty() -> {
-                    EmptyState(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                    AdaptiveContentPane(
+                            modifier = Modifier.padding(innerPadding),
+                            maxWidth = 760.dp
+                    ) {
+                        EmptyState(modifier = Modifier.fillMaxSize())
+                    }
                 }
                 else -> {
                     ServerList(
@@ -137,7 +147,8 @@ class ServerListScreen : Screen {
                             onSelect = { viewModel.onEvent(ServerContract.Event.SelectServer(it)) },
                             onDelete = { viewModel.onEvent(ServerContract.Event.DeleteServer(it)) },
                             onEdit = { navigator.push(AddServerScreen(it)) },
-                            modifier = Modifier.fillMaxSize().padding(innerPadding)
+                            modifier = Modifier.fillMaxSize().padding(innerPadding),
+                            isTabletLandscape = adaptiveInfo.isTabletLandscape
                     )
                 }
             }
@@ -179,22 +190,29 @@ private fun ServerList(
         onSelect: (Long) -> Unit,
         onDelete: (Long) -> Unit,
         onEdit: (Long) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        isTabletLandscape: Boolean
 ) {
-    LazyColumn(
-            modifier = modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item { Spacer(modifier = Modifier.height(4.dp)) }
-        items(servers, key = { it.id }) { server ->
-            ServerCard(
-                    server = server,
-                    onSelect = { onSelect(server.id) },
-                    onDelete = { onDelete(server.id) },
-                    onEdit = { onEdit(server.id) }
-            )
+    AdaptiveContentPane(modifier = modifier, maxWidth = if (isTabletLandscape) 1280.dp else 840.dp) {
+        LazyVerticalGrid(
+                columns =
+                        if (isTabletLandscape) GridCells.Adaptive(minSize = 320.dp)
+                        else GridCells.Fixed(1),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(modifier = Modifier.height(4.dp)) }
+            items(servers, key = { it.id }) { server ->
+                ServerCard(
+                        server = server,
+                        onSelect = { onSelect(server.id) },
+                        onDelete = { onDelete(server.id) },
+                        onEdit = { onEdit(server.id) }
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(modifier = Modifier.height(80.dp)) }
         }
-        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 

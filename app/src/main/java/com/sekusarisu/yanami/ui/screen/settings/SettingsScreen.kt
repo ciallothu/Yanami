@@ -66,6 +66,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 import com.sekusarisu.yanami.ui.theme.ThemeColor
 
@@ -79,6 +81,7 @@ class SettingsScreen : Screen {
         val state by viewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -98,95 +101,121 @@ class SettingsScreen : Screen {
                     )
                 }
         ) { innerPadding ->
-            Column(
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .padding(innerPadding)
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(horizontal = 16.dp)
+            AdaptiveContentPane(
+                    modifier = Modifier.padding(innerPadding),
+                    maxWidth = if (adaptiveInfo.isTabletLandscape) 1200.dp else 900.dp
             ) {
-                // ── 预览卡片：模拟总览 + NodeCard ──
-                MockOverviewCard()
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                MockNodeCardPreview()
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ── 主题颜色 ──
-                FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                Column(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                                        .padding(horizontal = 16.dp)
                 ) {
-                    ThemeColor.entries.forEach { color ->
-                        if (color == ThemeColor.DYNAMIC &&
-                                        Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+                    if (adaptiveInfo.isTabletLandscape) {
+                        Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                verticalAlignment = Alignment.Top
                         ) {
-                            return@forEach
+                            Column(modifier = Modifier.weight(0.95f)) {
+                                MockOverviewCard()
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MockNodeCardPreview()
+                            }
+                            Column(modifier = Modifier.weight(1.05f)) {
+                                SettingsControls(
+                                        state = state,
+                                        onEvent = viewModel::onEvent
+                                )
+                            }
                         }
-
-                        ThemeColorCircle(
-                                themeColor = color,
-                                isSelected = state.themeColor == color,
-                                label = getThemeColorName(color),
-                                onClick = soundClick { viewModel.onEvent(SettingsEvent.SetThemeColor(color)) }
+                    } else {
+                        MockOverviewCard()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        MockNodeCardPreview()
+                        Spacer(modifier = Modifier.height(20.dp))
+                        SettingsControls(
+                                state = state,
+                                onEvent = viewModel::onEvent
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ── 深色模式 ──
-                SettingsListItem(
-                        icon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
-                        title = stringResource(R.string.settings_dark_mode)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DarkModeChip(
-                                label = stringResource(R.string.settings_dark_mode_system),
-                                selected = state.darkMode == "system",
-                                onClick = soundClick { viewModel.onEvent(SettingsEvent.SetDarkMode("system")) }
-                        )
-                        DarkModeChip(
-                                label = stringResource(R.string.settings_dark_mode_light),
-                                selected = state.darkMode == "light",
-                                onClick = soundClick { viewModel.onEvent(SettingsEvent.SetDarkMode("light")) }
-                        )
-                        DarkModeChip(
-                                label = stringResource(R.string.settings_dark_mode_dark),
-                                selected = state.darkMode == "dark",
-                                onClick = soundClick { viewModel.onEvent(SettingsEvent.SetDarkMode("dark")) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ── 字体大小 ──
-                SettingsListItem(
-                        icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
-                        title = stringResource(R.string.settings_font_scale)
-                ) {
-                    Column {
-                        Text(
-                                text = String.format("%d%%", (state.fontScale * 100).toInt()),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Slider(
-                                value = state.fontScale,
-                                onValueChange = { viewModel.onEvent(SettingsEvent.SetFontScale(it)) },
-                                valueRange = 0.8f..1.4f,
-                                steps = 11,
-                                modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SettingsControls(
+        state: SettingsState,
+        onEvent: (SettingsEvent) -> Unit
+) {
+    FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+    ) {
+        ThemeColor.entries.forEach { color ->
+            if (color == ThemeColor.DYNAMIC && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                return@forEach
+            }
+
+            ThemeColorCircle(
+                    themeColor = color,
+                    isSelected = state.themeColor == color,
+                    label = getThemeColorName(color),
+                    onClick = soundClick { onEvent(SettingsEvent.SetThemeColor(color)) }
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    SettingsListItem(
+            icon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
+            title = stringResource(R.string.settings_dark_mode)
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DarkModeChip(
+                    label = stringResource(R.string.settings_dark_mode_system),
+                    selected = state.darkMode == "system",
+                    onClick = soundClick { onEvent(SettingsEvent.SetDarkMode("system")) }
+            )
+            DarkModeChip(
+                    label = stringResource(R.string.settings_dark_mode_light),
+                    selected = state.darkMode == "light",
+                    onClick = soundClick { onEvent(SettingsEvent.SetDarkMode("light")) }
+            )
+            DarkModeChip(
+                    label = stringResource(R.string.settings_dark_mode_dark),
+                    selected = state.darkMode == "dark",
+                    onClick = soundClick { onEvent(SettingsEvent.SetDarkMode("dark")) }
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    SettingsListItem(
+            icon = { Icon(Icons.Default.FormatSize, contentDescription = null) },
+            title = stringResource(R.string.settings_font_scale)
+    ) {
+        Column {
+            Text(
+                    text = String.format("%d%%", (state.fontScale * 100).toInt()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                    value = state.fontScale,
+                    onValueChange = { onEvent(SettingsEvent.SetFontScale(it)) },
+                    valueRange = 0.8f..1.4f,
+                    steps = 11,
+                    modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

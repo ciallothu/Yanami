@@ -55,7 +55,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 import org.koin.core.parameter.parametersOf
 
@@ -120,6 +122,7 @@ fun AddServerContent(
     onEvent: (ServerContract.Event) -> Unit,
     onBack: () -> Unit
 ) {
+    val adaptiveInfo = rememberAdaptiveLayoutInfo()
     Scaffold(
             topBar = {
                 TopAppBar(
@@ -143,14 +146,17 @@ fun AddServerContent(
                 )
             }
     ) { innerPadding ->
-        Column(
-                modifier =
-                        Modifier.fillMaxSize()
-                                .padding(innerPadding)
-                                .padding(horizontal = 16.dp)
-                                .verticalScroll(rememberScrollState())
+        AdaptiveContentPane(
+                modifier = Modifier.padding(innerPadding),
+                maxWidth = if (adaptiveInfo.isTabletLandscape) 900.dp else 840.dp
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                    modifier =
+                            Modifier.fillMaxSize()
+                                    .padding(horizontal = 16.dp)
+                                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                     value = state.name,
@@ -421,7 +427,8 @@ fun AddServerContent(
                 Text(stringResource(R.string.action_save))
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 }

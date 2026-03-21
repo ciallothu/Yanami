@@ -54,6 +54,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 
 class SettingsHubScreen : Screen {
@@ -67,6 +69,7 @@ class SettingsHubScreen : Screen {
         val state by viewModel.state.collectAsState()
         var showLanguageDialog by remember { mutableStateOf(false) }
         val context = LocalContext.current
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         val languages = listOf(
                 "system" to stringResource(R.string.settings_language_system),
@@ -94,14 +97,17 @@ class SettingsHubScreen : Screen {
                     )
                 }
         ) { innerPadding ->
-            Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState())
+            AdaptiveContentPane(
+                    modifier = Modifier.padding(innerPadding),
+                    maxWidth = if (adaptiveInfo.isTabletLandscape) 900.dp else 840.dp
             ) {
-                // ── 分组标题: 通用 ──
-                SectionHeader(title = stringResource(R.string.settings_general))
+                Column(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                ) {
+                    // ── 分组标题: 通用 ──
+                    SectionHeader(title = stringResource(R.string.settings_general))
 
                 // ── 自动进入节点列表 ──
                 SettingsToggleItem(
@@ -172,7 +178,8 @@ class SettingsHubScreen : Screen {
                         onClick = soundClick { navigator.push(AboutScreen()) }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
 

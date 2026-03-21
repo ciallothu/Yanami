@@ -42,7 +42,9 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 import org.koin.core.parameter.parametersOf
 
@@ -87,6 +89,7 @@ fun ServerReLoginContent(
     onEvent: (ServerReLoginContract.Event) -> Unit,
     onBack: () -> Unit
 ) {
+    val adaptiveInfo = rememberAdaptiveLayoutInfo()
     Scaffold(
             topBar = {
                 TopAppBar(
@@ -104,14 +107,17 @@ fun ServerReLoginContent(
             }
     ) { innerPadding ->
         val lockCredentials = state.requires2fa && state.username.isNotBlank() && state.password.isNotBlank()
-        Column(
-                modifier =
-                        Modifier.fillMaxSize()
-                                .padding(innerPadding)
-                                .padding(horizontal = 16.dp)
-                                .verticalScroll(rememberScrollState())
+        AdaptiveContentPane(
+                modifier = Modifier.padding(innerPadding),
+                maxWidth = if (adaptiveInfo.isTabletLandscape) 760.dp else 680.dp
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                    modifier =
+                            Modifier.fillMaxSize()
+                                    .padding(horizontal = 16.dp)
+                                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                     text =
@@ -205,18 +211,19 @@ fun ServerReLoginContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                    onClick = soundClick { onEvent(ServerReLoginContract.Event.Submit) },
-                    enabled = !state.isLoading && !state.isSubmitting,
-                    modifier = Modifier.fillMaxWidth()
-            ) {
-                if (state.isSubmitting) {
-                    CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(stringResource(R.string.server_relogin_action))
+                Button(
+                        onClick = soundClick { onEvent(ServerReLoginContract.Event.Submit) },
+                        enabled = !state.isLoading && !state.isSubmitting,
+                        modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (state.isSubmitting) {
+                        CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(stringResource(R.string.server_relogin_action))
+                    }
                 }
             }
         }

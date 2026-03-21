@@ -82,6 +82,8 @@ import com.sekusarisu.yanami.domain.model.LoadRecord
 import com.sekusarisu.yanami.domain.model.Node
 import com.sekusarisu.yanami.domain.model.PingRecord
 import com.sekusarisu.yanami.domain.model.PingTask
+import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.nodelist.formatBytes
 import com.sekusarisu.yanami.ui.screen.nodelist.formatUptime
 import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
@@ -110,6 +112,7 @@ class NodeDetailScreen(private val uuid: String) : Screen {
         val prefsRepo = koinInject<UserPreferencesRepository>()
         val prefs by prefsRepo.preferencesFlow.collectAsState(initial = UserPreferences())
         val chartAnimationEnabled = prefs.chartAnimationEnabled
+        val adaptiveInfo = rememberAdaptiveLayoutInfo()
 
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -204,6 +207,7 @@ class NodeDetailScreen(private val uuid: String) : Screen {
                         NodeDetailContent(
                                 state = state,
                                 chartAnimationEnabled = chartAnimationEnabled,
+                                isTabletLandscape = adaptiveInfo.isTabletLandscape,
                                 onLoadHoursChanged = {
                                     viewModel.onEvent(NodeDetailContract.Event.LoadHoursChanged(it))
                                 },
@@ -224,6 +228,7 @@ class NodeDetailScreen(private val uuid: String) : Screen {
 private fun NodeDetailContent(
         state: NodeDetailContract.State,
         chartAnimationEnabled: Boolean,
+        isTabletLandscape: Boolean,
         onLoadHoursChanged: (Int) -> Unit,
         onPingHoursChanged: (Int) -> Unit
 ) {
@@ -235,177 +240,272 @@ private fun NodeDetailContent(
     val loadIsLoading =
             if (state.selectedLoadHours == 0) false else state.isLoadRecordsLoading
 
-    LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item { Spacer(modifier = Modifier.height(4.dp)) }
+    AdaptiveContentPane(maxWidth = if (isTabletLandscape) 1440.dp else 920.dp) {
+        LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
-        // 4.1 服务器信息总览
-        item { ServerInfoCard(node) }
+            item { ServerInfoCard(node) }
 
-        // 4.2 负载图表 - 标题
-        item {
-            ChartSectionHeader(
-                    title = stringResource(R.string.node_detail_load_chart),
-                    selectedHours = state.selectedLoadHours,
-                    onHoursChanged = onLoadHoursChanged,
-                    showRealtime = true
-            )
-        }
-
-        // 4.2 负载图表 - 内容（每个图表独立 item，懒加载）
-        if (loadIsLoading) {
             item {
-                ChartSectionSurface {
-                    Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator(modifier = Modifier.size(32.dp)) }
-                }
+                ChartSectionHeader(
+                        title = stringResource(R.string.node_detail_load_chart),
+                        selectedHours = state.selectedLoadHours,
+                        onHoursChanged = onLoadHoursChanged,
+                        showRealtime = true
+                )
             }
-        } else if (loadRecords.isEmpty()) {
-            item {
-                ChartSectionSurface {
-                    Box(
-                            modifier = Modifier.fillMaxWidth().height(100.dp),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                                text =
-                                        if (state.selectedLoadHours == 0)
+
+            if (loadIsLoading) {
+                item {
+                    ChartSectionSurface {
+                        Box(
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator(modifier = Modifier.size(32.dp)) }
+                    }
+                }
+            } else if (loadRecords.isEmpty()) {
+                item {
+                    ChartSectionSurface {
+                        Box(
+                                modifier = Modifier.fillMaxWidth().height(100.dp),
+                                contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                    text =
+                                            if (state.selectedLoadHours == 0) {
                                                 stringResource(R.string.node_detail_loading)
-                                        else stringResource(R.string.node_detail_no_records),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                                            } else {
+                                                stringResource(R.string.node_detail_no_records)
+                                            },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
-        } else {
-            val times = loadRecords.map { it.time }
-
-            item {
-                ChartSectionSurface {
-                    ChartCard(
-                            title = stringResource(R.string.node_detail_cpu_usage),
-                            data = loadRecords.map { it.cpu },
-                            times = times,
-                            color = MaterialTheme.colorScheme.primary,
-                            suffix = "%",
-                            chartAnimationEnabled = chartAnimationEnabled
-                    )
-                }
-            }
-
-            item {
-                ChartSectionSurface {
-                    ChartCard(
-                            title = stringResource(R.string.node_detail_ram),
-                            data = loadRecords.map { it.ramPercent },
-                            times = times,
-                            color = MaterialTheme.colorScheme.primary,
-                            suffix = "%",
-                            chartAnimationEnabled = chartAnimationEnabled
-                    )
-                }
-            }
-
-            item {
-                ChartSectionSurface {
-                    NetworkChartCard(
-                            title = stringResource(R.string.node_detail_net_speed),
-                            netInData = loadRecords.map { it.netIn.toDouble() },
-                            netOutData = loadRecords.map { it.netOut.toDouble() },
-                            times = times,
-                            chartAnimationEnabled = chartAnimationEnabled
-                    )
-                }
-            }
-
-            item {
-                ChartSectionSurface {
-                    ConnectionChartCard(
-                            title = stringResource(R.string.node_detail_connections),
-                            tcpData = loadRecords.map { it.connections },
-                            udpData = loadRecords.map { it.connectionsUdp },
-                            times = times,
-                            suffix = "",
-                            chartAnimationEnabled = chartAnimationEnabled
-                    )
-                }
-            }
-
-            item {
-                ChartSectionSurface {
-                    ChartCard(
-                            title = stringResource(R.string.node_detail_process),
-                            data = loadRecords.map { it.process.toDouble() },
-                            times = times,
-                            color = MaterialTheme.colorScheme.primary,
-                            suffix = "",
-                            chartAnimationEnabled = chartAnimationEnabled
-                    )
-                }
-            }
-        }
-
-        // 4.3 Ping 延迟监控 - 标题
-        item {
-            ChartSectionHeader(
-                    title = stringResource(R.string.node_detail_ping_chart),
-                    selectedHours = state.selectedPingHours,
-                    onHoursChanged = onPingHoursChanged,
-                    showRealtime = false
-            )
-        }
-
-        // 4.3 Ping 延迟监控 - 内容（每个任务独立 item）
-        if (state.isPingRecordsLoading) {
-            item {
-                ChartSectionSurface {
-                    Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator(modifier = Modifier.size(32.dp)) }
-                }
-            }
-        } else if (state.pingRecords.isEmpty()) {
-            item {
-                ChartSectionSurface {
-                    Box(
-                            modifier = Modifier.fillMaxWidth().height(100.dp),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                                text = stringResource(R.string.node_detail_no_records),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                val times = loadRecords.map { it.time }
+                if (isTabletLandscape) {
+                    item {
+                        WideChartRow(
+                                first = {
+                                    ChartCard(
+                                            title = stringResource(R.string.node_detail_cpu_usage),
+                                            data = loadRecords.map { it.cpu },
+                                            times = times,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            suffix = "%",
+                                            chartAnimationEnabled = chartAnimationEnabled
+                                    )
+                                },
+                                second = {
+                                    ChartCard(
+                                            title = stringResource(R.string.node_detail_ram),
+                                            data = loadRecords.map { it.ramPercent },
+                                            times = times,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            suffix = "%",
+                                            chartAnimationEnabled = chartAnimationEnabled
+                                    )
+                                }
                         )
                     }
-                }
-            }
-        } else {
-            state.pingTasks.forEach { task ->
-                val taskRecords = state.pingRecords.filter { it.taskId == task.id }
-                val taskValues = taskRecords.map { it.value }
-                val taskTimes = taskRecords.map { it.time }
-                if (taskValues.size >= 2) {
-                    item(key = "ping_${task.id}") {
+
+                    item {
+                        WideChartRow(
+                                first = {
+                                    NetworkChartCard(
+                                            title = stringResource(R.string.node_detail_net_speed),
+                                            netInData = loadRecords.map { it.netIn.toDouble() },
+                                            netOutData = loadRecords.map { it.netOut.toDouble() },
+                                            times = times,
+                                            chartAnimationEnabled = chartAnimationEnabled
+                                    )
+                                },
+                                second = {
+                                    ConnectionChartCard(
+                                            title = stringResource(R.string.node_detail_connections),
+                                            tcpData = loadRecords.map { it.connections },
+                                            udpData = loadRecords.map { it.connectionsUdp },
+                                            times = times,
+                                            suffix = "",
+                                            chartAnimationEnabled = chartAnimationEnabled
+                                    )
+                                }
+                        )
+                    }
+
+                    item {
                         ChartSectionSurface {
-                            PingTaskChart(
-                                    task = task,
-                                    values = taskValues,
-                                    times = taskTimes,
+                            ChartCard(
+                                    title = stringResource(R.string.node_detail_process),
+                                    data = loadRecords.map { it.process.toDouble() },
+                                    times = times,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    suffix = "",
+                                    chartAnimationEnabled = chartAnimationEnabled
+                            )
+                        }
+                    }
+                } else {
+                    item {
+                        ChartSectionSurface {
+                            ChartCard(
+                                    title = stringResource(R.string.node_detail_cpu_usage),
+                                    data = loadRecords.map { it.cpu },
+                                    times = times,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    suffix = "%",
+                                    chartAnimationEnabled = chartAnimationEnabled
+                            )
+                        }
+                    }
+
+                    item {
+                        ChartSectionSurface {
+                            ChartCard(
+                                    title = stringResource(R.string.node_detail_ram),
+                                    data = loadRecords.map { it.ramPercent },
+                                    times = times,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    suffix = "%",
+                                    chartAnimationEnabled = chartAnimationEnabled
+                            )
+                        }
+                    }
+
+                    item {
+                        ChartSectionSurface {
+                            NetworkChartCard(
+                                    title = stringResource(R.string.node_detail_net_speed),
+                                    netInData = loadRecords.map { it.netIn.toDouble() },
+                                    netOutData = loadRecords.map { it.netOut.toDouble() },
+                                    times = times,
+                                    chartAnimationEnabled = chartAnimationEnabled
+                            )
+                        }
+                    }
+
+                    item {
+                        ChartSectionSurface {
+                            ConnectionChartCard(
+                                    title = stringResource(R.string.node_detail_connections),
+                                    tcpData = loadRecords.map { it.connections },
+                                    udpData = loadRecords.map { it.connectionsUdp },
+                                    times = times,
+                                    suffix = "",
+                                    chartAnimationEnabled = chartAnimationEnabled
+                            )
+                        }
+                    }
+
+                    item {
+                        ChartSectionSurface {
+                            ChartCard(
+                                    title = stringResource(R.string.node_detail_process),
+                                    data = loadRecords.map { it.process.toDouble() },
+                                    times = times,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    suffix = "",
                                     chartAnimationEnabled = chartAnimationEnabled
                             )
                         }
                     }
                 }
             }
-        }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+            item {
+                ChartSectionHeader(
+                        title = stringResource(R.string.node_detail_ping_chart),
+                        selectedHours = state.selectedPingHours,
+                        onHoursChanged = onPingHoursChanged,
+                        showRealtime = false
+                )
+            }
+
+            if (state.isPingRecordsLoading) {
+                item {
+                    ChartSectionSurface {
+                        Box(
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator(modifier = Modifier.size(32.dp)) }
+                    }
+                }
+            } else if (state.pingRecords.isEmpty()) {
+                item {
+                    ChartSectionSurface {
+                        Box(
+                                modifier = Modifier.fillMaxWidth().height(100.dp),
+                                contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                    text = stringResource(R.string.node_detail_no_records),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            } else {
+                val pingCharts =
+                        state.pingTasks.mapNotNull { task ->
+                            val taskRecords = state.pingRecords.filter { it.taskId == task.id }
+                            val taskValues = taskRecords.map { it.value }
+                            val taskTimes = taskRecords.map { it.time }
+                            if (taskValues.size >= 2) Triple(task.id, task, taskValues to taskTimes)
+                            else null
+                        }
+
+                if (isTabletLandscape) {
+                    pingCharts.chunked(2).forEachIndexed { index, chunk ->
+                        item(key = "ping_row_$index") {
+                            WideChartRow(
+                                    first = {
+                                        val (_, task, records) = chunk[0]
+                                        PingTaskChart(
+                                                task = task,
+                                                values = records.first,
+                                                times = records.second,
+                                                chartAnimationEnabled = chartAnimationEnabled
+                                        )
+                                    },
+                                    second =
+                                            chunk.getOrNull(1)?.let { secondChart ->
+                                                {
+                                                    PingTaskChart(
+                                                            task = secondChart.second,
+                                                            values = secondChart.third.first,
+                                                            times = secondChart.third.second,
+                                                            chartAnimationEnabled = chartAnimationEnabled
+                                                    )
+                                                }
+                                            }
+                            )
+                        }
+                    }
+                } else {
+                    pingCharts.forEach { (taskId, task, records) ->
+                        item(key = "ping_$taskId") {
+                            ChartSectionSurface {
+                                PingTaskChart(
+                                        task = task,
+                                        values = records.first,
+                                        times = records.second,
+                                        chartAnimationEnabled = chartAnimationEnabled
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
     }
 }
 
@@ -413,6 +513,7 @@ private fun NodeDetailContent(
 
 @Composable
 private fun ServerInfoCard(node: Node) {
+    val adaptiveInfo = rememberAdaptiveLayoutInfo()
     Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -443,80 +544,151 @@ private fun ServerInfoCard(node: Node) {
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 系统信息
-            InfoRow(stringResource(R.string.node_detail_os), node.os)
-            if (node.kernelVersion.isNotBlank()) {
-                InfoRow(stringResource(R.string.node_detail_kernel), node.kernelVersion)
-            }
-            if (node.arch.isNotBlank()) {
+            if (adaptiveInfo.isTabletLandscape) {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        InfoRow(stringResource(R.string.node_detail_os), node.os)
+                        if (node.kernelVersion.isNotBlank()) {
+                            InfoRow(stringResource(R.string.node_detail_kernel), node.kernelVersion)
+                        }
+                        if (node.arch.isNotBlank()) {
+                            InfoRow(
+                                    stringResource(R.string.node_detail_platform),
+                                    "${node.virtualization} / ${node.arch}"
+                            )
+                        }
+                        InfoRow(
+                                stringResource(R.string.node_detail_cpu),
+                                "${node.cpuName} (${node.cpuCores} ${stringResource(R.string.node_detail_cores)})"
+                        )
+                        InfoRow(
+                                stringResource(R.string.node_detail_load),
+                                "%.2f / %.2f / %.2f".format(node.load1, node.load5, node.load15)
+                        )
+                        InfoRow(
+                                stringResource(R.string.node_detail_net_traffic),
+                                "↑ ${formatBytes(node.netTotalUp)}  ↓ ${formatBytes(node.netTotalDown)}"
+                        )
+                        InfoRow(stringResource(R.string.node_detail_uptime), formatUptime(node.uptime))
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        UsageBar(
+                                label = stringResource(R.string.node_detail_cpu_usage),
+                                percent = node.cpuUsage,
+                                detail = "%.1f%%".format(node.cpuUsage)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        UsageBar(
+                                label = stringResource(R.string.node_detail_ram),
+                                percent =
+                                        if (node.memTotal > 0) {
+                                            node.memUsed.toDouble() / node.memTotal * 100
+                                        } else {
+                                            0.0
+                                        },
+                                detail = "${formatBytes(node.memUsed)} / ${formatBytes(node.memTotal)}"
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        if (node.swapTotal > 0) {
+                            UsageBar(
+                                    label = "Swap",
+                                    percent = node.swapUsed.toDouble() / node.swapTotal * 100,
+                                    detail = "${formatBytes(node.swapUsed)} / ${formatBytes(node.swapTotal)}"
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        UsageBar(
+                                label = stringResource(R.string.node_detail_disk),
+                                percent =
+                                        if (node.diskTotal > 0) {
+                                            node.diskUsed.toDouble() / node.diskTotal * 100
+                                        } else {
+                                            0.0
+                                        },
+                                detail = "${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}"
+                        )
+                    }
+                }
+            } else {
+                InfoRow(stringResource(R.string.node_detail_os), node.os)
+                if (node.kernelVersion.isNotBlank()) {
+                    InfoRow(stringResource(R.string.node_detail_kernel), node.kernelVersion)
+                }
+                if (node.arch.isNotBlank()) {
+                    InfoRow(
+                            stringResource(R.string.node_detail_platform),
+                            "${node.virtualization} / ${node.arch}"
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(8.dp))
+
                 InfoRow(
-                        stringResource(R.string.node_detail_platform),
-                        "${node.virtualization} / ${node.arch}"
+                        stringResource(R.string.node_detail_cpu),
+                        "${node.cpuName} (${node.cpuCores} ${stringResource(R.string.node_detail_cores)})"
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // CPU
-            InfoRow(
-                    stringResource(R.string.node_detail_cpu),
-                    "${node.cpuName} (${node.cpuCores} ${stringResource(R.string.node_detail_cores)})"
-            )
-            UsageBar(
-                    label = stringResource(R.string.node_detail_cpu_usage),
-                    percent = node.cpuUsage,
-                    detail = "%.1f%%".format(node.cpuUsage)
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // RAM
-            UsageBar(
-                    label = stringResource(R.string.node_detail_ram),
-                    percent =
-                            if (node.memTotal > 0) node.memUsed.toDouble() / node.memTotal * 100
-                            else 0.0,
-                    detail = "${formatBytes(node.memUsed)} / ${formatBytes(node.memTotal)}"
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Swap
-            if (node.swapTotal > 0) {
                 UsageBar(
-                        label = "Swap",
-                        percent = node.swapUsed.toDouble() / node.swapTotal * 100,
-                        detail = "${formatBytes(node.swapUsed)} / ${formatBytes(node.swapTotal)}"
+                        label = stringResource(R.string.node_detail_cpu_usage),
+                        percent = node.cpuUsage,
+                        detail = "%.1f%%".format(node.cpuUsage)
                 )
+
                 Spacer(modifier = Modifier.height(6.dp))
+
+                UsageBar(
+                        label = stringResource(R.string.node_detail_ram),
+                        percent =
+                                if (node.memTotal > 0) node.memUsed.toDouble() / node.memTotal * 100
+                                else 0.0,
+                        detail = "${formatBytes(node.memUsed)} / ${formatBytes(node.memTotal)}"
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                if (node.swapTotal > 0) {
+                    UsageBar(
+                            label = "Swap",
+                            percent = node.swapUsed.toDouble() / node.swapTotal * 100,
+                            detail = "${formatBytes(node.swapUsed)} / ${formatBytes(node.swapTotal)}"
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                UsageBar(
+                        label = stringResource(R.string.node_detail_disk),
+                        percent =
+                                if (node.diskTotal > 0) node.diskUsed.toDouble() / node.diskTotal * 100
+                                else 0.0,
+                        detail = "${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}"
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                InfoRow(
+                        stringResource(R.string.node_detail_net_traffic),
+                        "↑ ${formatBytes(node.netTotalUp)}  ↓ ${formatBytes(node.netTotalDown)}"
+                )
+
+                InfoRow(
+                        stringResource(R.string.node_detail_load),
+                        "%.2f / %.2f / %.2f".format(node.load1, node.load5, node.load15)
+                )
+                InfoRow(stringResource(R.string.node_detail_uptime), formatUptime(node.uptime))
             }
-
-            // Disk
-            UsageBar(
-                    label = stringResource(R.string.node_detail_disk),
-                    percent =
-                            if (node.diskTotal > 0) node.diskUsed.toDouble() / node.diskTotal * 100
-                            else 0.0,
-                    detail = "${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}"
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 网络（仅总流量，速度已在图表中展示）
-            InfoRow(
-                    stringResource(R.string.node_detail_net_traffic),
-                    "↑ ${formatBytes(node.netTotalUp)}  ↓ ${formatBytes(node.netTotalDown)}"
-            )
-
-            InfoRow(
-                    stringResource(R.string.node_detail_load),
-                    "%.2f / %.2f / %.2f".format(node.load1, node.load5, node.load15)
-            )
-            InfoRow(stringResource(R.string.node_detail_uptime), formatUptime(node.uptime))
         }
     }
 }
@@ -641,15 +813,34 @@ private fun ChartSectionHeader(
 
 /** 单个图表项的 Surface 包装 */
 @Composable
-private fun ChartSectionSurface(content: @Composable () -> Unit) {
+private fun ChartSectionSurface(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 1.dp
     ) {
         Box(modifier = Modifier.padding(16.dp)) {
             content()
+        }
+    }
+}
+
+@Composable
+private fun WideChartRow(
+        first: @Composable () -> Unit,
+        second: (@Composable () -> Unit)? = null
+) {
+    Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+    ) {
+        ChartSectionSurface(modifier = Modifier.weight(1f), content = first)
+        if (second != null) {
+            ChartSectionSurface(modifier = Modifier.weight(1f), content = second)
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

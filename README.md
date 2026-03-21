@@ -22,35 +22,57 @@ English | [简体中文](README_zh.md)
 
 ## Screenshots
 
+<details>
+
+<summary>Expand</summary>
+
 ### Instance Management
 
 <p style="text-align: center;">
-    <img alt="desktop" src="assets/addserver.png" width="360"> <img alt="desktop" src="assets/serverlist.png" width="360">
+    <img alt="addserver" src="assets/addserver.png" width="360"> <img alt="serverlist" src="assets/serverlist.png" width="360">
 </p>
 
-### Day/Light Mode
+### Day/Light Mode (Phone)
 
 <p style="text-align: center;">
-    <img alt="desktop" src="assets/nodelist.png" width="360"> <img alt="desktop" src="assets/nodedetail1.png" width="360">
+    <img alt="nodelist" src="assets/nodelist.png" width="360"> <img alt="nodedetail1" src="assets/nodedetail1.png" width="360">
+</p>
+
+### Day/Light Mode (Tablet)
+
+<p style="text-align: center;">
+    <img alt="nodelisttablet" src="assets/nodelisttablet.png" width="720">
+</p>
+
+<p style="text-align: center;">
+    <img alt="nodedetail1tablet" src="assets/nodedetail1tablet.png" width="720">
 </p>
 
 ### Night/Dark Mode
 
 <p style="text-align: center;">
-    <img alt="desktop" src="assets/nodelistdark.png" width="360"> <img alt="desktop" src="assets/nodedetaildark.png" width="360">
+    <img alt="nodelistdark" src="assets/nodelistdark.png" width="360"> <img alt="nodedetaildark" src="assets/nodedetaildark.png" width="360">
 </p>
 
 ### Latency Monitoring/SSH Terminal
 
 <p style="text-align: center;">
-    <img alt="desktop" src="assets/nodedetail2.png" width="360"> <img alt="desktop" src="assets/nodeterminal.png" width="360">
+    <img alt="nodedetail2" src="assets/nodedetail2.png" width="360"> <img alt="nodeterminal" src="assets/nodeterminal.png" width="360">
+</p>
+
+### Snippets
+
+<p style="text-align: center;">
+    <img alt="snippetslist" src="assets/snippetslist.png" width="360"> <img alt="addsnippet" src="assets/addsnippet.png" width="360">
 </p>
 
 ### Widget
 
 <p style="text-align: center;">
-    <img alt="desktop" src="assets/widget.png" width="360"> <img alt="desktop" src="assets/widgetdark.png" width="360">
+    <img alt="widget" src="assets/widget.png" width="360"> <img alt="widgetdark" src="assets/widgetdark.png" width="360">
 </p>
+
+</details>
 
 ## System Requirements
 

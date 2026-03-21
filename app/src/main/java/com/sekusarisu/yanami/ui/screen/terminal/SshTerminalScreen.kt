@@ -76,6 +76,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.viewinterop.AndroidView
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -83,6 +84,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.TerminalSnippet
+import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.soundClick
 import com.sekusarisu.yanami.ui.theme.ThemeColor
 import com.sekusarisu.yanami.ui.theme.YanamiTheme
@@ -425,6 +427,9 @@ private fun SnippetsSidebar(
         onDeleteRequest: (TerminalSnippet) -> Unit,
         onSend: (TerminalSnippet) -> Unit
 ) {
+    val adaptiveInfo = rememberAdaptiveLayoutInfo()
+    val sidebarWidthFraction = if (adaptiveInfo.isTabletLandscape) 0.33f else 0.8f
+
     AnimatedVisibility(
             visible = visible,
             enter = fadeIn(),
@@ -446,8 +451,8 @@ private fun SnippetsSidebar(
                     modifier =
                             Modifier.align(Alignment.CenterEnd)
                                     .fillMaxHeight()
-                                    .fillMaxWidth(0.88f)
-                                    .widthIn(max = 360.dp)
+                                    .widthIn(min = 360.dp, max = 360.dp)
+                                    .fillMaxWidth(sidebarWidthFraction)
             ) {
                 Surface(
                         modifier = Modifier.fillMaxSize(),

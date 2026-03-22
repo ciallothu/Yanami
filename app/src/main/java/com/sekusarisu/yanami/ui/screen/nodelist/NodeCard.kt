@@ -43,9 +43,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.Node
+import com.sekusarisu.yanami.domain.model.TrafficLimitUsage
+import com.sekusarisu.yanami.domain.model.calculateTrafficLimitUsage
 import com.sekusarisu.yanami.ui.screen.soundClick
+import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitPercent
+import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitTypeLabel
 
 /**
  * 节点卡片组件
@@ -126,6 +131,7 @@ fun NodeCard(node: Node, onClick: () -> Unit, isExpanded: Boolean, modifier: Mod
                                                         (node.diskUsed.toDouble() / node.diskTotal *
                                                                 100)
                                                 else 0.0
+                                        val trafficLimitUsage = node.calculateTrafficLimitUsage()
 
                                         Row(
                                                 modifier = Modifier.fillMaxWidth(),
@@ -150,6 +156,12 @@ fun NodeCard(node: Node, onClick: () -> Unit, isExpanded: Boolean, modifier: Mod
                                                         detail = formatBytes(node.diskTotal),
                                                         progressColor = getUsageColor(diskPercent)
                                                 )
+                                                if (trafficLimitUsage != null) {
+                                                        TrafficLimitMiniIndicator(
+                                                                usage = trafficLimitUsage,
+                                                                modifier = Modifier.align(Alignment.Bottom)
+                                                        )
+                                                }
                                         }
 
                                         Spacer(modifier = Modifier.height(10.dp))
@@ -210,31 +222,41 @@ fun NodeCard(node: Node, onClick: () -> Unit, isExpanded: Boolean, modifier: Mod
                                                 }
 
                                                 // 总流量
-                                                Row(
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                Column(
+                                                        horizontalAlignment = Alignment.End,
+                                                        verticalArrangement =
+                                                                Arrangement.spacedBy(4.dp)
                                                 ) {
-                                                        Text(
-                                                                text =
-                                                                        "↑ ${formatBytes(node.netTotalUp)}",
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .labelSmall,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(
-                                                                text =
-                                                                        "↓ ${formatBytes(node.netTotalDown)}",
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .labelSmall,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
-                                                        )
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.Bottom
+                                                        ) {
+                                                                Text(
+                                                                        text =
+                                                                                "↑ ${formatBytes(node.netTotalUp)}",
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .labelSmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                                Spacer(modifier = Modifier.width(8.dp))
+                                                                Text(
+                                                                        text =
+                                                                                "↓ ${formatBytes(node.netTotalDown)}",
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .labelSmall,
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                        }
                                                 }
                                         }
                                 }
@@ -256,7 +278,11 @@ private fun CircularUsageIndicator(
         strokeWidth: Dp = 6.dp,
         modifier: Modifier = Modifier
 ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = modifier
+        ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(ringSize)) {
                         val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                         val animatedSweep by animateFloatAsState(
@@ -435,6 +461,84 @@ fun formatUptime(seconds: Long): String {
         }
 }
 
+@Composable
+private fun TrafficLimitMiniIndicator(
+        usage: TrafficLimitUsage,
+        modifier: Modifier = Modifier
+) {
+        val progressColor = getUsageColor(usage.usagePercent)
+        val animatedSweep by animateFloatAsState(
+                targetValue = (usage.usagePercent / 100.0 * 360.0).toFloat().coerceIn(0f, 360f),
+                animationSpec = tween(durationMillis = 600),
+                label = "trafficLimitSweep"
+        )
+
+        Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = modifier
+        ) {
+                Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(42.dp)
+                ) {
+                        val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        Canvas(modifier = Modifier.size(42.dp)) {
+                                val stroke = 4.dp.toPx()
+                                val arcSize = size.width - stroke
+                                val topLeft = Offset(stroke / 2f, stroke / 2f)
+                                drawArc(
+                                        color = trackColor,
+                                        startAngle = -90f,
+                                        sweepAngle = 360f,
+                                        useCenter = false,
+                                        topLeft = topLeft,
+                                        size = Size(arcSize, arcSize),
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                )
+                                drawArc(
+                                        color = progressColor,
+                                        startAngle = -90f,
+                                        sweepAngle = animatedSweep,
+                                        useCenter = false,
+                                        topLeft = topLeft,
+                                        size = Size(arcSize, arcSize),
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                )
+                        }
+                        Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                                Text(
+                                        text = formatTrafficLimitTypeLabel(usage.type),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                        lineHeight = 8.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1
+                                )
+                                Text(
+                                        text = formatTrafficLimitPercent(usage.usagePercent),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        lineHeight = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = progressColor,
+                                        maxLines = 1
+                                )
+                        }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                // 底部详情
+                Text(
+                        text = formatBytes(usage.limit),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                )
+        }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun NodeCardPreview() {
@@ -469,7 +573,9 @@ fun NodeCardPreview() {
         kernelVersion = "5.4.0",
         virtualization = "KVM",
         arch = "amd64",
-        gpuName = ""
+        gpuName = "",
+        trafficLimit = 1_000L * 1024 * 1024 * 1024,
+        trafficLimitType = "sum"
     )
     MaterialTheme {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(16.dp)) {

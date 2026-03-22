@@ -103,6 +103,7 @@
     <string name="node_detail_disk">磁盘</string>
     <string name="node_detail_net_speed">网络速度</string>
     <string name="node_detail_net_traffic">总流量</string>
+    <string name="node_detail_traffic_limit">流量阈值</string>
     <string name="node_detail_connections">连接</string>
     <string name="node_detail_process">进程</string>
     <string name="node_detail_load">负载</string>

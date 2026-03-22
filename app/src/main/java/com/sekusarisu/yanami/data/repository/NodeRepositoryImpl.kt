@@ -233,7 +233,9 @@ class NodeRepositoryImpl(private val rpcService: KomariRpcService) : NodeReposit
                             kernelVersion = info.kernelVersion,
                             virtualization = info.virtualization,
                             arch = info.arch,
-                            gpuName = info.gpuName
+                            gpuName = info.gpuName,
+                            trafficLimit = info.trafficLimit,
+                            trafficLimitType = info.trafficLimitType
                     )
                 }
         return sortNodes(nodes)

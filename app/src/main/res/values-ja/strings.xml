@@ -103,6 +103,7 @@
     <string name="node_detail_disk">ディスク</string>
     <string name="node_detail_net_speed">ネットワーク速度</string>
     <string name="node_detail_net_traffic">総通信量</string>
+    <string name="node_detail_traffic_limit">通信量しきい値</string>
     <string name="node_detail_connections">接続数</string>
     <string name="node_detail_process">プロセス数</string>
     <string name="node_detail_load">負荷</string>

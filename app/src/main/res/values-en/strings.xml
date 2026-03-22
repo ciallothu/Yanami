@@ -103,6 +103,7 @@
     <string name="node_detail_disk">Disk</string>
     <string name="node_detail_net_speed">Net Speed</string>
     <string name="node_detail_net_traffic">Traffic</string>
+    <string name="node_detail_traffic_limit">Traffic Limit</string>
     <string name="node_detail_connections">Connections</string>
     <string name="node_detail_process">Processes</string>
     <string name="node_detail_load">Load</string>

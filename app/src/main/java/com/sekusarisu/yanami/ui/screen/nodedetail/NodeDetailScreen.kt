@@ -82,6 +82,7 @@ import com.sekusarisu.yanami.domain.model.LoadRecord
 import com.sekusarisu.yanami.domain.model.Node
 import com.sekusarisu.yanami.domain.model.PingRecord
 import com.sekusarisu.yanami.domain.model.PingTask
+import com.sekusarisu.yanami.domain.model.calculateTrafficLimitUsage
 import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.nodelist.formatBytes
@@ -90,6 +91,8 @@ import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerReLoginScreen
 import com.sekusarisu.yanami.ui.screen.terminal.SshTerminalScreen
+import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitDetail
+import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitTypeLabel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.time.Instant
@@ -514,6 +517,7 @@ private fun NodeDetailContent(
 @Composable
 private fun ServerInfoCard(node: Node) {
     val adaptiveInfo = rememberAdaptiveLayoutInfo()
+    val trafficLimitUsage = node.calculateTrafficLimitUsage()
     Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -617,6 +621,16 @@ private fun ServerInfoCard(node: Node) {
                                         },
                                 detail = "${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}"
                         )
+
+                        if (trafficLimitUsage != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            UsageBar(
+                                    label =
+                                            "${stringResource(R.string.node_detail_traffic_limit)} · ${formatTrafficLimitTypeLabel(trafficLimitUsage.type)}",
+                                    percent = trafficLimitUsage.usagePercent,
+                                    detail = formatTrafficLimitDetail(trafficLimitUsage)
+                            )
+                        }
                     }
                 }
             } else {
@@ -673,6 +687,16 @@ private fun ServerInfoCard(node: Node) {
                                 else 0.0,
                         detail = "${formatBytes(node.diskUsed)} / ${formatBytes(node.diskTotal)}"
                 )
+
+                if (trafficLimitUsage != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    UsageBar(
+                            label =
+                                    "${stringResource(R.string.node_detail_traffic_limit)} · ${formatTrafficLimitTypeLabel(trafficLimitUsage.type)}",
+                            percent = trafficLimitUsage.usagePercent,
+                            detail = formatTrafficLimitDetail(trafficLimitUsage)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
@@ -1371,7 +1395,9 @@ fun ServerInfoCardPreview() {
         kernelVersion = "5.15.0",
         virtualization = "KVM",
         arch = "x86_64",
-        gpuName = ""
+        gpuName = "",
+        trafficLimit = 64L * 1024 * 1024 * 1024,
+        trafficLimitType = "sum"
     )
     MaterialTheme {
         ServerInfoCard(node = sampleNode)

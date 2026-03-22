@@ -1,5 +1,6 @@
 package com.sekusarisu.yanami.ui.screen.nodelist
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,11 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +44,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -63,12 +70,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Wallpapers.BLUE_DOMINATED_EXAMPLE
+import androidx.compose.ui.tooling.preview.Wallpapers.GREEN_DOMINATED_EXAMPLE
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
+import com.sekusarisu.yanami.domain.model.Node
 import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
 import com.sekusarisu.yanami.ui.screen.nodedetail.NodeDetailScreen
@@ -76,6 +87,8 @@ import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerReLoginScreen
 import com.sekusarisu.yanami.ui.screen.soundClick
+import com.sekusarisu.yanami.ui.theme.ThemeColor
+import com.sekusarisu.yanami.ui.theme.YanamiTheme
 
 /**
  * 节点列表主页面
@@ -123,85 +136,109 @@ class NodeListScreen : Screen {
             }
         }
 
-        Scaffold(
-                topBar = {
-                    TopAppBar(
-                            title = {
-                                Text(
-                                        text =
-                                                state.serverName.ifBlank {
-                                                    stringResource(R.string.node_list)
-                                                },
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+        NodeListScaffoldContent(
+                state = state,
+                isAllExpanded = isAllExpanded,
+                isTabletLandscape = adaptiveInfo.isTabletLandscape,
+                onBackClick = soundClick { navigator.pop() },
+                onToggleExpandClick = soundClick { isAllExpanded = !isAllExpanded },
+                onRefresh = { viewModel.onEvent(NodeListContract.Event.Refresh) },
+                onRetry = { viewModel.onEvent(NodeListContract.Event.Retry) },
+                onEvent = viewModel::onEvent
+        )
+    }
+}
+
+// ─── 主内容 ───
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NodeListScaffoldContent(
+        state: NodeListContract.State,
+        isAllExpanded: Boolean,
+        isTabletLandscape: Boolean,
+        onBackClick: () -> Unit,
+        onToggleExpandClick: () -> Unit,
+        onRefresh: () -> Unit,
+        onRetry: () -> Unit,
+        onEvent: (NodeListContract.Event) -> Unit,
+        modifier: Modifier = Modifier
+) {
+    Scaffold(
+            modifier = modifier,
+            topBar = {
+                TopAppBar(
+                        title = {
+                            Text(
+                                    text =
+                                            state.serverName.ifBlank {
+                                                stringResource(R.string.node_list)
+                                            },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBackClick) {
+                                Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.action_back)
                                 )
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = soundClick { navigator.pop() }) {
-                                    Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription =
-                                                    stringResource(R.string.action_back)
-                                    )
-                                }
-                            },
-                            actions = {
-                                // 全局展开/收缩按钮
-                                IconButton(onClick = soundClick { isAllExpanded = !isAllExpanded }) {
-                                    Icon(
-                                            imageVector =
-                                                    if (isAllExpanded) Icons.Default.UnfoldLess
-                                                    else Icons.Default.UnfoldMore,
-                                            contentDescription =
-                                                    if (isAllExpanded)
-                                                            stringResource(R.string.node_collapse)
-                                                    else stringResource(R.string.node_expand)
-                                    )
-                                }
-                            },
-                            colors =
-                                    TopAppBarDefaults.topAppBarColors(
-                                            containerColor = MaterialTheme.colorScheme.surface
-                                    )
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = onToggleExpandClick) {
+                                Icon(
+                                        imageVector =
+                                                if (isAllExpanded) Icons.Default.UnfoldLess
+                                                else Icons.Default.UnfoldMore,
+                                        contentDescription =
+                                                if (isAllExpanded)
+                                                        stringResource(R.string.node_collapse)
+                                                else stringResource(R.string.node_expand)
+                                )
+                            }
+                        },
+                        colors =
+                                TopAppBarDefaults.topAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                )
+                )
+            }
+    ) { innerPadding ->
+        when {
+            state.isLoading -> {
+                LoadingContent(modifier = Modifier.fillMaxSize().padding(innerPadding))
+            }
+            state.error != null -> {
+                ErrorContent(
+                        error = state.error,
+                        onRetry = onRetry,
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                )
+            }
+            else -> {
+                PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                ) {
+                    NodeListContent(
+                            state = state,
+                            onEvent = onEvent,
+                            isAllExpanded = isAllExpanded,
+                            isTabletLandscape = isTabletLandscape
                     )
-                }
-        ) { innerPadding ->
-            when {
-                state.isLoading -> {
-                    LoadingContent(modifier = Modifier.fillMaxSize().padding(innerPadding))
-                }
-                state.error != null -> {
-                    ErrorContent(
-                            error = state.error!!,
-                            onRetry = { viewModel.onEvent(NodeListContract.Event.Retry) },
-                            modifier = Modifier.fillMaxSize().padding(innerPadding)
-                    )
-                }
-                else -> {
-                    PullToRefreshBox(
-                            isRefreshing = state.isRefreshing,
-                            onRefresh = { viewModel.onEvent(NodeListContract.Event.Refresh) },
-                            modifier = Modifier.fillMaxSize().padding(innerPadding)
-                    ) {
-                        NodeListContent(
-                                state = state,
-                                viewModel = viewModel,
-                                isAllExpanded = isAllExpanded,
-                                isTabletLandscape = adaptiveInfo.isTabletLandscape
-                        )
-                    }
                 }
             }
         }
     }
 }
 
-// ─── 主内容 ───
-
 @Composable
 private fun NodeListContent(
         state: NodeListContract.State,
-        viewModel: NodeListViewModel,
+        onEvent: (NodeListContract.Event) -> Unit,
         isAllExpanded: Boolean,
         isTabletLandscape: Boolean
 ) {
@@ -220,7 +257,7 @@ private fun NodeListContent(
                                     // 向右滑 → 上一个分组
                                     val currentIndex = allGroups.indexOf(state.selectedGroup)
                                     if (currentIndex > 0) {
-                                        viewModel.onEvent(
+                                        onEvent(
                                                 NodeListContract.Event.GroupSelected(
                                                         allGroups[currentIndex - 1]
                                                 )
@@ -230,7 +267,7 @@ private fun NodeListContent(
                                     // 向左滑 → 下一个分组
                                     val currentIndex = allGroups.indexOf(state.selectedGroup)
                                     if (currentIndex < allGroups.size - 1) {
-                                        viewModel.onEvent(
+                                        onEvent(
                                                 NodeListContract.Event.GroupSelected(
                                                         allGroups[currentIndex + 1]
                                                 )
@@ -261,9 +298,7 @@ private fun NodeListContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 SearchBar(
                         query = state.searchQuery,
-                        onQueryChange = {
-                            viewModel.onEvent(NodeListContract.Event.SearchQueryChanged(it))
-                        }
+                        onQueryChange = { onEvent(NodeListContract.Event.SearchQueryChanged(it)) }
                 )
             }
 
@@ -278,7 +313,7 @@ private fun NodeListContent(
                         totalTrafficDown = state.totalTrafficDown,
                         statusFilter = state.statusFilter,
                         onStatusFilterSelected = {
-                            viewModel.onEvent(NodeListContract.Event.StatusFilterSelected(it))
+                            onEvent(NodeListContract.Event.StatusFilterSelected(it))
                         }
                 )
             }
@@ -288,9 +323,7 @@ private fun NodeListContent(
                     GroupFilterRow(
                             groups = state.groups,
                             selectedGroup = state.selectedGroup,
-                            onGroupSelected = {
-                                viewModel.onEvent(NodeListContract.Event.GroupSelected(it))
-                            }
+                            onGroupSelected = { onEvent(NodeListContract.Event.GroupSelected(it)) }
                     )
                 }
             }
@@ -308,9 +341,7 @@ private fun NodeListContent(
                 items(state.filteredNodes, key = { it.uuid }) { node ->
                     NodeCard(
                             node = node,
-                            onClick = soundClick {
-                                viewModel.onEvent(NodeListContract.Event.NodeClicked(node.uuid))
-                            },
+                            onClick = soundClick { onEvent(NodeListContract.Event.NodeClicked(node.uuid)) },
                             isExpanded = isAllExpanded
                     )
                 }
@@ -649,7 +680,7 @@ private fun EmptyNodeList(hasSearchQuery: Boolean, hasGroupFilter: Boolean, hasS
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun SearchBarPreview() {
     MaterialTheme {
@@ -657,7 +688,7 @@ fun SearchBarPreview() {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun OverviewCardPreview() {
     MaterialTheme {
@@ -677,7 +708,7 @@ fun OverviewCardPreview() {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun GroupFilterRowPreview() {
     MaterialTheme {
@@ -691,7 +722,7 @@ fun GroupFilterRowPreview() {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Preview(showBackground = true)
 @Composable
 fun StateContentPreview() {
     MaterialTheme {
@@ -703,3 +734,190 @@ fun StateContentPreview() {
     }
 }
 
+@Preview(name = "NodeList Tablet", showBackground = true, widthDp = 1280, heightDp = 800)
+@Composable
+private fun NodeListTabletPreview() {
+    YanamiTheme(themeColor = ThemeColor.BLUE_MTB, darkTheme = false) {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                NodeListTabletPreviewRail()
+                NodeListScaffoldContent(
+                        state = nodeListTabletPreviewState(),
+                        isAllExpanded = true,
+                        isTabletLandscape = true,
+                        onBackClick = {},
+                        onToggleExpandClick = {},
+                        onRefresh = {},
+                        onRetry = {},
+                        onEvent = {},
+                        modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NodeListTabletPreviewRail() {
+    NavigationRail(modifier = Modifier.fillMaxHeight()) {
+        Spacer(modifier = Modifier.weight(1f))
+        NavigationRailItem(
+                selected = false,
+                onClick = {},
+                icon = { Icon(Icons.Default.Dns, contentDescription = null) },
+                label = { Text(stringResource(R.string.server_management)) }
+        )
+        NavigationRailItem(
+                selected = true,
+                onClick = {},
+                icon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                label = { Text(stringResource(R.string.node_list)) }
+        )
+        NavigationRailItem(
+                selected = false,
+                onClick = {},
+                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                label = { Text(stringResource(R.string.settings_title)) }
+        )
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+private fun nodeListTabletPreviewState(): NodeListContract.State {
+    val nodes =
+            listOf(
+                    previewNode(
+                            index = 1,
+                            name = "JP-Tokyo-01",
+                            region = "🇯🇵",
+                            group = "Asia",
+                            isOnline = true
+                    ),
+                    previewNode(
+                            index = 2,
+                            name = "SG-Singapore-02",
+                            region = "🇸🇬",
+                            group = "Asia",
+                            isOnline = true
+                    ),
+                    previewNode(
+                            index = 3,
+                            name = "DE-Frankfurt-03",
+                            region = "🇩🇪",
+                            group = "Europe",
+                            isOnline = true
+                    ),
+                    previewNode(
+                            index = 4,
+                            name = "FR-Paris-04",
+                            region = "🇫🇷",
+                            group = "Europe",
+                            isOnline = true
+                    ),
+                    previewNode(
+                            index = 5,
+                            name = "US-Fremont-05",
+                            region = "🇺🇸",
+                            group = "America",
+                            isOnline = true
+                    ),
+                    previewNode(
+                            index = 6,
+                            name = "CA-Toronto-06",
+                            region = "🇨🇦",
+                            group = "America",
+                            isOnline = true
+                    ),
+                    previewNode(
+                        index = 7,
+                        name = "JP-Tokyo-02",
+                        region = "🇯🇵",
+                        group = "Asia",
+                        isOnline = true
+                    ),
+                    previewNode(
+                        index = 8,
+                        name = "SG-Singapore-03",
+                        region = "🇸🇬",
+                        group = "Asia",
+                        isOnline = false
+                    ),
+                    previewNode(
+                        index = 9,
+                        name = "DE-Frankfurt-04",
+                        region = "🇩🇪",
+                        group = "Europe",
+                        isOnline = false
+                    )
+            )
+
+    return NodeListContract.State(
+            isLoading = false,
+            isRefreshing = false,
+            nodes = nodes,
+            filteredNodes = nodes,
+            searchQuery = "",
+            groups = listOf("Asia", "Europe", "America"),
+            selectedGroup = null,
+            statusFilter = NodeListContract.StatusFilter.ALL,
+            error = null,
+            onlineCount = nodes.count { it.isOnline },
+            offlineCount = nodes.count { !it.isOnline },
+            totalCount = nodes.size,
+            totalNetIn = nodes.sumOf { it.netIn },
+            totalNetOut = nodes.sumOf { it.netOut },
+            totalTrafficUp = nodes.sumOf { it.netTotalUp },
+            totalTrafficDown = nodes.sumOf { it.netTotalDown },
+            serverName = "Yanami Edge Cluster"
+    )
+}
+
+private fun previewNode(
+        index: Int,
+        name: String,
+        region: String,
+        group: String,
+        isOnline: Boolean
+): Node =
+        Node(
+                uuid = "preview-node-$index",
+                name = name,
+                region = region,
+                group = group,
+                isOnline = isOnline,
+                cpuUsage = 18.0 + index * 9,
+                memUsed = (index * 768L) * 1024 * 1024,
+                memTotal = 8L * 1024 * 1024 * 1024,
+                swapUsed = index * 64L * 1024 * 1024,
+                swapTotal = 2L * 1024 * 1024 * 1024,
+                diskUsed = (28L + index * 11L) * 1024 * 1024 * 1024,
+                diskTotal = 256L * 1024 * 1024 * 1024,
+                netIn = if (isOnline) index * 7L * 1024 * 1024 else 0,
+                netOut = if (isOnline) index * 5L * 1024 * 1024 else 0,
+                netTotalUp = (120L + index * 35L) * 1024 * 1024 * 1024,
+                netTotalDown = (220L + index * 48L) * 1024 * 1024 * 1024,
+                uptime = if (isOnline) (index * 2L + 1L) * 86_400 else 0,
+                os = "Ubuntu 24.04 LTS",
+                cpuName = "AMD EPYC 7B12",
+                cpuCores = 4 + index,
+                weight = index,
+                load1 = 0.2 * index,
+                load5 = 0.16 * index,
+                load15 = 0.12 * index,
+                process = 120 + index * 6,
+                connectionsTcp = 80 + index * 11,
+                connectionsUdp = 12 + index * 2,
+                kernelVersion = "6.8.0",
+                virtualization = "KVM",
+                arch = "amd64",
+                gpuName = "",
+                trafficLimit = if (index % 2 == 0) (900L + index * 50L) * 1024 * 1024 * 1024 else 0,
+                trafficLimitType =
+                        when (index % 5) {
+                                0 -> "sum"
+                                1 -> "max"
+                                2 -> "min"
+                                3 -> "up"
+                                else -> "down"
+                        }
+        )

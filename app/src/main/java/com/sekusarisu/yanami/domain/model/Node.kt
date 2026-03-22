@@ -37,5 +37,40 @@ data class Node(
         val kernelVersion: String = "",
         val virtualization: String = "",
         val arch: String = "",
-        val gpuName: String = ""
+        val gpuName: String = "",
+        val trafficLimit: Long = 0,
+        val trafficLimitType: String = ""
 )
+
+data class TrafficLimitUsage(
+        val currentUsage: Long,
+        val limit: Long,
+        val type: String,
+        val usagePercent: Double
+)
+
+fun Node.calculateTrafficLimitUsage(): TrafficLimitUsage? {
+        if (trafficLimit <= 0) return null
+
+        val normalizedType = trafficLimitType.lowercase()
+        val effectiveType =
+                if (normalizedType in SUPPORTED_TRAFFIC_LIMIT_TYPES) normalizedType else "sum"
+        val currentUsage =
+                when (effectiveType) {
+                        "sum" -> netTotalUp + netTotalDown
+                        "max" -> maxOf(netTotalUp, netTotalDown)
+                        "min" -> minOf(netTotalUp, netTotalDown)
+                        "up" -> netTotalUp
+                        "down" -> netTotalDown
+                        else -> netTotalUp + netTotalDown
+                }
+
+        return TrafficLimitUsage(
+                currentUsage = currentUsage,
+                limit = trafficLimit,
+                type = effectiveType,
+                usagePercent = currentUsage.toDouble() / trafficLimit * 100
+        )
+}
+
+private val SUPPORTED_TRAFFIC_LIMIT_TYPES = setOf("sum", "max", "min", "up", "down")

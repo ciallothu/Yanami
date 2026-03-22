@@ -485,18 +485,25 @@ private fun MockNodeCardPreview() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                            text = "↑ 100 GB",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                            text = "↓ 200 GB",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                                text = "↑ 100 GB",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                                text = "↓ 200 GB",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        MockTrafficLimitMiniIndicator(percent = 30.0, type = "SUM")
+                    }
                 }
             }
         }
@@ -562,6 +569,59 @@ private fun MockCircularIndicator(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun MockTrafficLimitMiniIndicator(percent: Double, type: String) {
+    val ringSize = 42.dp
+    val strokeWidth = 4.dp
+    val progressColor =
+            when {
+                percent < 50 -> MaterialTheme.colorScheme.primary
+                percent < 80 -> MaterialTheme.colorScheme.tertiary
+                else -> MaterialTheme.colorScheme.error
+            }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(ringSize)) {
+            val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            val sweep = (percent / 100.0 * 360.0).toFloat().coerceIn(0f, 360f)
+            Canvas(modifier = Modifier.size(ringSize)) {
+                val stroke = strokeWidth.toPx()
+                val arcSize = size.width - stroke
+                val topLeft = Offset(stroke / 2f, stroke / 2f)
+                drawArc(
+                        color = trackColor,
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = Size(arcSize, arcSize),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                )
+                drawArc(
+                        color = progressColor,
+                        startAngle = -90f,
+                        sweepAngle = sweep,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = Size(arcSize, arcSize),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                )
+            }
+            Text(
+                    text = "${percent.toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = progressColor
+            )
+        }
+        Text(
+                text = type,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

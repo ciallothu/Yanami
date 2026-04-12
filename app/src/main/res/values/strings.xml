@@ -111,6 +111,7 @@
     <string name="client_management_show_token">查看 Token</string>
     <string name="client_management_token_title">客户端 Token</string>
     <string name="client_management_token_copied">Token 已复制</string>
+    <string name="client_management_ip_copied">IP 已复制</string>
     <string name="client_management_delete_title">删除客户端</string>
     <string name="client_management_delete_confirm">确定要删除「%s」吗？此操作不可恢复。</string>
     <string name="client_management_updated_at">更新时间：%s</string>

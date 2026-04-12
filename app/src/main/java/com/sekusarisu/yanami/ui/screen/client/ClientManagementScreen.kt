@@ -212,7 +212,7 @@ class ClientManagementScreen : Screen {
                             modifier = Modifier.fillMaxSize().padding(innerPadding)
                     ) {
                         AdaptiveContentPane(modifier = Modifier.fillMaxSize(), maxWidth = 920.dp) {
-                            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                                 OutlinedTextField(
                                         value = state.searchQuery,
                                         onValueChange = {
@@ -461,6 +461,9 @@ private fun ClientCard(
         onMoveUp: () -> Unit,
         onMoveDown: () -> Unit
 ) {
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
+
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             val expiryStatus = client.calculateExpiryStatus()
@@ -508,7 +511,17 @@ private fun ClientCard(
             ) {
                 if (client.ipv4.isNotBlank()) {
                     AssistChip(
-                            onClick = {},
+                            onClick = {
+                                clipboard.setText(AnnotatedString(client.ipv4))
+                                Toast.makeText(
+                                                context,
+                                                context.getString(
+                                                        R.string.client_management_ip_copied
+                                                ),
+                                                Toast.LENGTH_SHORT
+                                        )
+                                        .show()
+                            },
                             label = {
                                 Text(
                                         stringResource(
@@ -521,7 +534,17 @@ private fun ClientCard(
                 }
                 if (client.ipv6.isNotBlank()) {
                     AssistChip(
-                            onClick = {},
+                            onClick = {
+                                clipboard.setText(AnnotatedString(client.ipv6))
+                                Toast.makeText(
+                                                context,
+                                                context.getString(
+                                                        R.string.client_management_ip_copied
+                                                ),
+                                                Toast.LENGTH_SHORT
+                                        )
+                                        .show()
+                            },
                             label = {
                                 Text(
                                         stringResource(
@@ -585,20 +608,20 @@ private fun ClientCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedButton(onClick = onShowToken) {
                     Icon(Icons.Default.Key, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(stringResource(R.string.client_management_show_token))
                 }
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     Text(stringResource(R.string.action_edit))
                 }
                 OutlinedButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     Text(stringResource(R.string.action_delete))
                 }
             }
@@ -780,7 +803,7 @@ private fun ClientManagementContentPreview() {
                 }
         ) { innerPadding ->
             AdaptiveContentPane(modifier = Modifier.padding(innerPadding), maxWidth = 920.dp) {
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                     OutlinedTextField(
                             value = "",
                             onValueChange = {},

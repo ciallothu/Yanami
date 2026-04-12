@@ -16,7 +16,7 @@ class ClientRepositoryImpl(private val service: KomariAdminClientService) : Clie
             sessionToken: String,
             authType: AuthType
     ): List<ManagedClient> {
-        return service.listClients(baseUrl, sessionToken, authType).map { it.toDomain() }
+        return service.listClients(baseUrl, sessionToken, authType).map { it.toDomain() }.sortClients()
     }
 
     override suspend fun getClient(
@@ -117,3 +117,7 @@ private fun ManagedClientDto.toDomain(): ManagedClient =
                 createdAt = createdAt,
                 updatedAt = updatedAt
         )
+
+private fun List<ManagedClient>.sortClients(): List<ManagedClient> {
+    return sortedWith(compareBy<ManagedClient> { it.weight }.thenBy { it.name })
+}

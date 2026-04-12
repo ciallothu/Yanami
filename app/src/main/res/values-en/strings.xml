@@ -11,6 +11,8 @@
     <string name="action_retry">Retry</string>
     <string name="action_search">Search</string>
     <string name="action_settings">Settings</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_close">Close</string>
 
     <!-- Server Management -->
     <string name="server_management">Server Management</string>
@@ -93,6 +95,58 @@
     <string name="node_traffic_down">Total download traffic</string>
     <string name="node_net_speed">Speed</string>
     <string name="node_net_traffic">Traffic</string>
+    <string name="client_management_title">Client Management</string>
+    <string name="client_management_search">Search clients…</string>
+    <string name="client_management_total_count">Showing %1$d / %2$d</string>
+    <string name="client_management_mask_ip">Mask IP</string>
+    <string name="client_management_sort_mode">Sort mode</string>
+    <string name="client_management_sort_mode_hint">Long press a card to drag and reorder</string>
+    <string name="client_management_sort_mode_requires_all">Clear search and group filters before entering sort mode</string>
+    <string name="client_management_empty">No matching clients</string>
+    <string name="client_management_load_failed">Failed to load clients: %s</string>
+    <string name="client_management_refresh_failed">Failed to refresh clients: %s</string>
+    <string name="client_management_deleted">Deleted \"%s\"</string>
+    <string name="client_management_delete_failed">Failed to delete client: %s</string>
+    <string name="client_management_reorder_failed">Failed to update order: %s</string>
+    <string name="client_management_reordering">Updating order…</string>
+    <string name="client_management_guest_unsupported">Guest mode does not support client management</string>
+    <string name="client_management_hidden_badge">Hidden</string>
+    <string name="client_management_show_token">Show Token</string>
+    <string name="client_management_token_title">Client Token</string>
+    <string name="client_management_token_copied">Token copied</string>
+    <string name="client_management_ip_copied">IP copied</string>
+    <string name="client_management_delete_title">Delete Client</string>
+    <string name="client_management_delete_confirm">Delete \"%s\"? This action cannot be undone.</string>
+    <string name="client_management_updated_at">Updated: %s</string>
+    <string name="client_management_ipv4">IPv4: %s</string>
+    <string name="client_management_ipv6">IPv6: %s</string>
+    <string name="client_management_agent_version">Agent: %s</string>
+    <string name="client_management_billing_summary">Billing: %1$s%2$s / %3$d days · %4$s</string>
+    <string name="client_management_billing_free">Billing: Free / %1$d days · %2$s</string>
+    <string name="client_management_auto_renewal_on">Auto-renew</string>
+    <string name="client_management_auto_renewal_off">Manual renewal</string>
+    <string name="client_management_create">New Client</string>
+    <string name="client_create_hint">Name is optional. Leave it empty to let the server generate a default name.</string>
+    <string name="client_create_failed">Failed to create client: %s</string>
+    <string name="client_create_success_title">Client Created</string>
+    <string name="client_edit_title">Edit Client</string>
+    <string name="client_edit_load_failed">Failed to load client details: %s</string>
+    <string name="client_edit_saved">Client saved</string>
+    <string name="client_edit_save_failed">Failed to save client: %s</string>
+    <string name="client_edit_name">Name</string>
+    <string name="client_edit_group">Group</string>
+    <string name="client_edit_tags">Tags</string>
+    <string name="client_edit_remark">Internal remark</string>
+    <string name="client_edit_public_remark">Public remark</string>
+    <string name="client_edit_weight">Weight</string>
+    <string name="client_edit_price">Price</string>
+    <string name="client_edit_billing_cycle">Billing cycle (days)</string>
+    <string name="client_edit_currency">Currency</string>
+    <string name="client_edit_expired_at">Expiration time (RFC3339)</string>
+    <string name="client_edit_traffic_limit">Traffic limit</string>
+    <string name="client_edit_auto_renewal">Auto-renew</string>
+    <string name="client_edit_hidden">Hidden</string>
+    <string name="client_edit_traffic_limit_type">Traffic limit type</string>
 
     <!-- Node Detail -->
     <string name="node_detail_title">Node Detail</string>

@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -24,6 +26,8 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Timelapse
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,8 +57,10 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -63,7 +70,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.ManagedClient
+import com.sekusarisu.yanami.domain.model.calculateExpiryStatus
 import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
+import com.sekusarisu.yanami.ui.screen.ExpiryBadge
 import com.sekusarisu.yanami.ui.screen.server.AddServerScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerListScreen
 import com.sekusarisu.yanami.ui.screen.server.ServerReLoginScreen
@@ -454,29 +463,41 @@ private fun ClientCard(
 ) {
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            val expiryStatus = client.calculateExpiryStatus()
+            val secondaryInfo =
+                    listOf(client.group, client.os, client.version)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · ")
             Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(client.region + " " + client.name, style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                            text =
-                                    listOf(client.group, client.os, client.version)
-                                            .filter { it.isNotBlank() }
-                                            .joinToString(" · "),
-                            style = MaterialTheme.typography.bodyMedium
-                    )
+                Text(
+                        text = client.region + " " + client.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (expiryStatus != null) {
+                        ExpiryBadge(expiryStatus = expiryStatus)
+                    }
+                    if (client.hidden) {
+                        HiddenBadge()
+                    }
                 }
-                if (client.hidden) {
-                    AssistChip(
-                            onClick = {},
-                            label = {
-                                Text(stringResource(R.string.client_management_hidden_badge))
-                            }
-                    )
-                }
+            }
+
+            if (secondaryInfo.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                        text = secondaryInfo,
+                        style = MaterialTheme.typography.bodyMedium
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -530,29 +551,37 @@ private fun ClientCard(
 
             Text(
                     text =
-                            stringResource(
-                                    R.string.client_management_billing_summary,
-                                    client.currency,
-                                    client.price.billingText(),
-                                    client.billingCycle,
-                                    if (client.autoRenewal)
-                                            stringResource(R.string.client_management_auto_renewal_on)
-                                    else stringResource(R.string.client_management_auto_renewal_off)
-                            ),
+                            if (client.price < 0) {
+                                stringResource(
+                                        R.string.client_management_billing_free,
+                                        client.billingCycle,
+                                        if (client.autoRenewal)
+                                                stringResource(
+                                                        R.string.client_management_auto_renewal_on
+                                                )
+                                        else
+                                                stringResource(
+                                                        R.string.client_management_auto_renewal_off
+                                                )
+                                )
+                            } else {
+                                stringResource(
+                                        R.string.client_management_billing_summary,
+                                        client.currency,
+                                        client.price.billingText(),
+                                        client.billingCycle,
+                                        if (client.autoRenewal)
+                                                stringResource(
+                                                        R.string.client_management_auto_renewal_on
+                                                )
+                                        else
+                                                stringResource(
+                                                        R.string.client_management_auto_renewal_off
+                                                )
+                                )
+                            },
                     style = MaterialTheme.typography.bodyMedium
             )
-
-            if (!client.expiredAt.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                        text =
-                                stringResource(
-                                        R.string.client_management_expired_at,
-                                        client.expiredAt
-                                ),
-                        style = MaterialTheme.typography.bodySmall
-                )
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -595,6 +624,34 @@ private fun ClientCard(
 //                            ),
 //                    style = MaterialTheme.typography.bodySmall
 //            )
+        }
+    }
+}
+
+@Composable
+private fun HiddenBadge(modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Icon(
+                Icons.Default.VisibilityOff,
+                contentDescription =
+                    stringResource(R.string.node_expiry_badge_remaining),
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = stringResource(R.string.client_management_hidden_badge),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

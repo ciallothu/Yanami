@@ -118,9 +118,9 @@
     <string name="client_management_ipv6">IPv6: %s</string>
     <string name="client_management_agent_version">Agent: %s</string>
     <string name="client_management_billing_summary">账单：%1$s%2$s / %3$d 天 · %4$s</string>
+    <string name="client_management_billing_free">账单：免费 / %1$d 天 · %2$s</string>
     <string name="client_management_auto_renewal_on">自动续费</string>
     <string name="client_management_auto_renewal_off">手动续费</string>
-    <string name="client_management_expired_at">到期时间：%s</string>
     <string name="client_management_create">新建客户端</string>
     <string name="client_create_hint">可选填写名称；留空时服务端会生成默认名称。</string>
     <string name="client_create_failed">创建客户端失败: %s</string>

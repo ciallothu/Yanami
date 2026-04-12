@@ -51,6 +51,7 @@ import com.sekusarisu.yanami.domain.model.NodeExpiryStatus
 import com.sekusarisu.yanami.domain.model.TrafficLimitUsage
 import com.sekusarisu.yanami.domain.model.calculateExpiryStatus
 import com.sekusarisu.yanami.domain.model.calculateTrafficLimitUsage
+import com.sekusarisu.yanami.ui.screen.ExpiryBadge
 import com.sekusarisu.yanami.ui.screen.soundClick
 import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitPercent
 import com.sekusarisu.yanami.ui.traffic.formatTrafficLimitTypeLabel
@@ -406,51 +407,6 @@ private fun StatusBadge(isOnline: Boolean) {
         }
 }
 
-@Composable
-private fun ExpiryBadge(expiryStatus: NodeExpiryStatus) {
-        val (bgColor, textColor) =
-                when {
-                        expiryStatus.isExpired ->
-                                MaterialTheme.colorScheme.errorContainer to
-                                        MaterialTheme.colorScheme.onErrorContainer
-                        expiryStatus.remainingSeconds <= 3 * 86_400 ->
-                                MaterialTheme.colorScheme.errorContainer to
-                                        MaterialTheme.colorScheme.onErrorContainer
-                        expiryStatus.remainingSeconds <= 14 * 86_400 ->
-                                MaterialTheme.colorScheme.tertiaryContainer to
-                                        MaterialTheme.colorScheme.onTertiaryContainer
-                        else ->
-                                MaterialTheme.colorScheme.secondaryContainer to
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                }
-
-        androidx.compose.material3.Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = bgColor
-        ) {
-                Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(vertical = 2.dp, horizontal = 8.dp)
-                ) {
-                        Icon(
-                                Icons.Default.Timelapse,
-                                contentDescription = stringResource(R.string.node_expiry_badge_remaining),
-                                modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(
-                                modifier = Modifier.width(2.dp)
-                        )
-                        Text(
-                                text = formatExpiryBadgeText(expiryStatus),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = textColor,
-                        )
-                }
-        }
-}
-
 // ─── 工具函数 ───
 
 @Composable
@@ -511,33 +467,6 @@ fun formatUptime(seconds: Long): String {
                 days > 0 -> "${days}d ${hours}h"
                 hours > 0 -> "${hours}h ${mins}m"
                 else -> "${mins}m"
-        }
-}
-
-@Composable
-private fun formatExpiryBadgeText(expiryStatus: NodeExpiryStatus): String {
-        if (expiryStatus.isExpired) {
-                return stringResource(R.string.node_expiry_badge_expired)
-        }
-        if (expiryStatus.remainingSeconds > 3L * 365 * 86_400) {
-                return stringResource(R.string.node_expiry_badge_long_term)
-        }
-        return stringResource(
-                R.string.node_expiry_badge_remaining,
-                formatRemainingDurationShort(expiryStatus.remainingSeconds)
-        )
-}
-
-private fun formatRemainingDurationShort(remainingSeconds: Long): String {
-        val days = remainingSeconds / 86_400
-        val hours = (remainingSeconds % 86_400) / 3_600
-        val minutes = (remainingSeconds % 3_600) / 60
-
-        return when {
-                days > 0 -> "${days}d"
-                hours > 0 -> "${hours}h"
-                minutes > 0 -> "${minutes}m"
-                else -> "<1m"
         }
 }
 

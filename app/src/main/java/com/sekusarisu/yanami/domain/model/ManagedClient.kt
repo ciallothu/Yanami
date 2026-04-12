@@ -1,5 +1,11 @@
 package com.sekusarisu.yanami.domain.model
 
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -59,6 +65,20 @@ data class ManagedClientDraft(
 
 data class ManagedClientCreateResult(val uuid: String, val token: String)
 
+fun ManagedClient.calculateExpiryStatus(
+        now: Instant = Instant.now(),
+        zoneId: ZoneId = ZoneId.systemDefault()
+): NodeExpiryStatus? {
+        val raw = expiredAt?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val expiryInstant = parseManagedClientExpiryInstant(raw, zoneId) ?: return null
+        val remainingSeconds = expiryInstant.epochSecond - now.epochSecond
+        return NodeExpiryStatus(
+                expiryInstant = expiryInstant,
+                remainingSeconds = remainingSeconds,
+                isExpired = remainingSeconds <= 0
+        )
+}
+
 fun ManagedClient.toDraft(): ManagedClientDraft =
         ManagedClientDraft(
                 name = name,
@@ -117,4 +137,30 @@ fun ManagedClientDraft.toUpdatePayload(): JsonObject {
                 put("traffic_limit", parsedTrafficLimit)
                 put("traffic_limit_type", trafficLimitType.trim())
         }
+}
+
+private fun parseManagedClientExpiryInstant(value: String, zoneId: ZoneId): Instant? {
+        return runCatching { Instant.parse(value) }.getOrNull()
+                ?: runCatching { OffsetDateTime.parse(value).toInstant() }.getOrNull()
+                ?: runCatching {
+                            LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                                    .atZone(zoneId)
+                                    .toInstant()
+                    }
+                        .getOrNull()
+                ?: runCatching {
+                            LocalDateTime.parse(
+                                            value,
+                                            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                                    )
+                                    .atZone(zoneId)
+                                    .toInstant()
+                    }
+                        .getOrNull()
+                ?: runCatching {
+                            LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE)
+                                    .atStartOfDay(zoneId)
+                                    .toInstant()
+                    }
+                        .getOrNull()
 }

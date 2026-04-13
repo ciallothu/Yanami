@@ -18,10 +18,11 @@ object ClientManagementContract {
             val selectedGroup: String? = null,
             val maskIpAddress: Boolean = true,
             val isSortMode: Boolean = false,
-            val tokenDialogClient: ManagedClient? = null,
+            val installCommandClient: ManagedClient? = null,
             val pendingDeleteClient: ManagedClient? = null,
             val error: String? = null,
-            val serverName: String = ""
+            val serverName: String = "",
+            val serverBaseUrl: String = ""
     ) : UiState
 
     sealed interface Event : UiEvent {
@@ -36,8 +37,8 @@ object ClientManagementContract {
         data class DeleteClicked(val uuid: String) : Event
         data object ConfirmDelete : Event
         data object DismissDelete : Event
-        data class ShowTokenClicked(val uuid: String) : Event
-        data object DismissToken : Event
+        data class ShowInstallCommandClicked(val uuid: String) : Event
+        data object DismissInstallCommand : Event
         data class MoveUpClicked(val uuid: String) : Event
         data class MoveDownClicked(val uuid: String) : Event
         data class CommitReorder(val orderedUuids: List<String>) : Event

@@ -61,12 +61,12 @@ class ClientManagementViewModel(
             is ClientManagementContract.Event.DismissDelete -> {
                 setState { copy(pendingDeleteClient = null) }
             }
-            is ClientManagementContract.Event.ShowTokenClicked -> {
+            is ClientManagementContract.Event.ShowInstallCommandClicked -> {
                 val target = currentState.clients.firstOrNull { it.uuid == event.uuid } ?: return
-                setState { copy(tokenDialogClient = target) }
+                setState { copy(installCommandClient = target) }
             }
-            is ClientManagementContract.Event.DismissToken -> {
-                setState { copy(tokenDialogClient = null) }
+            is ClientManagementContract.Event.DismissInstallCommand -> {
+                setState { copy(installCommandClient = null) }
             }
             is ClientManagementContract.Event.MoveUpClicked -> moveClient(event.uuid, -1)
             is ClientManagementContract.Event.MoveDownClicked -> moveClient(event.uuid, 1)
@@ -108,7 +108,14 @@ class ClientManagementViewModel(
                         )
                 hasLoadedOnce = true
                 updateClientsState(clients)
-                setState { copy(isLoading = false, error = null, serverName = server.name) }
+                setState {
+                    copy(
+                            isLoading = false,
+                            error = null,
+                            serverName = server.name,
+                            serverBaseUrl = server.baseUrl
+                    )
+                }
             }
         }
     }
@@ -138,7 +145,14 @@ class ClientManagementViewModel(
                         )
                 hasLoadedOnce = true
                 updateClientsState(clients)
-                setState { copy(isRefreshing = false, error = null, serverName = server.name) }
+                setState {
+                    copy(
+                            isRefreshing = false,
+                            error = null,
+                            serverName = server.name,
+                            serverBaseUrl = server.baseUrl
+                    )
+                }
             }
         }
     }

@@ -515,7 +515,7 @@ private fun NodeDetailContent(
 // ─── 4.1 服务器信息总览 ───
 
 @Composable
-private fun ServerInfoCard(node: Node) {
+internal fun ServerInfoCard(node: Node) {
     val adaptiveInfo = rememberAdaptiveLayoutInfo()
     val trafficLimitUsage = node.calculateTrafficLimitUsage()
     Surface(
@@ -743,7 +743,7 @@ private fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-private fun UsageBar(label: String, percent: Double, detail: String) {
+internal fun UsageBar(label: String, percent: Double, detail: String) {
     val animatedProgress by animateFloatAsState(
             targetValue = (percent / 100).toFloat().coerceIn(0f, 1f),
             animationSpec = tween(durationMillis = 600),
@@ -802,7 +802,7 @@ private fun StatusChip(isOnline: Boolean) {
 
 /** 图表分区标题卡片：标题 + 时间范围选择器 */
 @Composable
-private fun ChartSectionHeader(
+internal fun ChartSectionHeader(
         title: String,
         selectedHours: Int,
         onHoursChanged: (Int) -> Unit,
@@ -837,7 +837,7 @@ private fun ChartSectionHeader(
 
 /** 单个图表项的 Surface 包装 */
 @Composable
-private fun ChartSectionSurface(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun ChartSectionSurface(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Surface(
             modifier = modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -872,7 +872,7 @@ private fun WideChartRow(
 // ─── 4.3 Ping 单任务图表 ───
 
 @Composable
-private fun PingTaskChart(
+internal fun PingTaskChart(
         task: PingTask,
         values: List<Double>,
         times: List<String>,
@@ -965,7 +965,7 @@ private fun formatChartSpeed(bytesPerSec: Double): String {
 }
 
 @Composable
-private fun ChartCard(
+internal fun ChartCard(
         title: String,
         data: List<Double>,
         times: List<String>,
@@ -1051,7 +1051,7 @@ private fun ChartCard(
 }
 
 @Composable
-private fun ConnectionChartCard(
+internal fun ConnectionChartCard(
     title: String,
     tcpData: List<Int>,
     udpData: List<Int>,
@@ -1156,7 +1156,7 @@ private fun ConnectionChartCard(
 }
 
 @Composable
-private fun NetworkChartCard(
+internal fun NetworkChartCard(
         title: String,
         netInData: List<Double>,
         netOutData: List<Double>,
@@ -1361,129 +1361,3 @@ private fun getUsageColor(percent: Double): Color = when {
     else -> MaterialTheme.colorScheme.error
 }
 
-@Preview
-@Composable
-fun ServerInfoCardPreview() {
-    val sampleNode = Node(
-        uuid = "123",
-        name = "Sample Node",
-        region = "🇯🇵",
-        group = "Default",
-        isOnline = true,
-        cpuUsage = 45.0,
-        memUsed = 1024 * 1024 * 1024,
-        memTotal = 4 * 1024 * 1024 * 1024L,
-        swapUsed = 0,
-        swapTotal = 0,
-        diskUsed = 20 * 1024 * 1024 * 1024L,
-        diskTotal = 100 * 1024 * 1024 * 1024L,
-        netIn = 1024 * 1024,
-        netOut = 2 * 1024 * 1024,
-        netTotalUp = 10L * 1024 * 1024 * 1024,
-        netTotalDown = 20L * 1024 * 1024 * 1024,
-        uptime = 3600 * 24 * 2,
-        os = "Ubuntu 22.04",
-        cpuName = "Intel Xeon",
-        cpuCores = 2,
-        weight = 0,
-        load1 = 0.5,
-        load5 = 0.4,
-        load15 = 0.3,
-        process = 100,
-        connectionsTcp = 50,
-        connectionsUdp = 10,
-        kernelVersion = "5.15.0",
-        virtualization = "KVM",
-        arch = "x86_64",
-        gpuName = "",
-        trafficLimit = 64L * 1024 * 1024 * 1024,
-        trafficLimitType = "sum",
-        expiredAt = "2026-04-15T12:00:00"
-    )
-    MaterialTheme {
-        ServerInfoCard(node = sampleNode)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoadChartSectionPreview() {
-    val sampleRecords = listOf(
-        LoadRecord(time = "2026-03-01T10:00:00Z", cpu = 40.0, ramPercent = 50.0, diskPercent = 60.0, netIn = 1024, netOut = 2048, load = 1.0, process = 100, connections = 50, connectionsUdp = 10),
-        LoadRecord(time = "2026-03-01T10:05:00Z", cpu = 45.0, ramPercent = 52.0, diskPercent = 60.0, netIn = 2048, netOut = 4096, load = 1.2, process = 105, connections = 60, connectionsUdp = 12),
-        LoadRecord(time = "2026-03-01T10:10:00Z", cpu = 35.0, ramPercent = 48.0, diskPercent = 60.0, netIn = 512, netOut = 1024, load = 0.9, process = 95, connections = 45, connectionsUdp = 8)
-    )
-    val times = sampleRecords.map { it.time }
-    MaterialTheme {
-        Column {
-            ChartSectionHeader(
-                title = "负载历史",
-                selectedHours = 1,
-                onHoursChanged = {},
-                showRealtime = true
-            )
-            ChartSectionSurface {
-                ChartCard(
-                    title = "CPU Usage",
-                    data = sampleRecords.map { it.cpu },
-                    times = times,
-                    color = MaterialTheme.colorScheme.primary,
-                    suffix = "%"
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PingChartSectionPreview() {
-    val sampleTasks = listOf(
-        PingTask(id = 1, name = "Google", interval = 60, latest = 15.0, min = 10.0, max = 20.0, avg = 14.0, loss = 0.0, p50 = 14.0, p99 = 19.0)
-    )
-    val sampleRecords = listOf(
-        PingRecord(taskId = 1, taskName = "Google", time = "2026-03-01T10:00:00Z", value = 15.0),
-        PingRecord(taskId = 1, taskName = "Google", time = "2026-03-01T10:05:00Z", value = 16.0),
-        PingRecord(taskId = 1, taskName = "Google", time = "2026-03-01T10:10:00Z", value = 14.0)
-    )
-    MaterialTheme {
-        ChartSectionSurface {
-            PingTaskChart(
-                task = sampleTasks.first(),
-                values = sampleRecords.map { it.value },
-                times = sampleRecords.map { it.time }
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ChartComponentsPreview() {
-    val times = listOf("2026-03-01T10:00:00Z", "2026-03-01T10:05:00Z", "2026-03-01T10:10:00Z")
-    MaterialTheme {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            UsageBar(label = "CPU", percent = 45.0, detail = "45.0%")
-            ChartCard(
-                title = "CPU Usage",
-                data = listOf(40.0, 45.0, 35.0),
-                times = times,
-                color = MaterialTheme.colorScheme.primary,
-                suffix = "%"
-            )
-            ConnectionChartCard(
-                title = "Connections",
-                tcpData = listOf(50, 60, 45),
-                udpData = listOf(10, 12, 8),
-                times = times,
-                suffix = ""
-            )
-            NetworkChartCard(
-                title = "Network",
-                netInData = listOf(1024.0, 2048.0, 512.0),
-                netOutData = listOf(2048.0, 4096.0, 1024.0),
-                times = times
-            )
-        }
-    }
-}

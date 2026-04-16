@@ -62,7 +62,19 @@ class NodeListViewModel(
 
     /** 初始加载：恢复 session / 登录 + 获取基本信息 + 启动 WebSocket */
     private fun loadNodes() {
-        setState { copy(isLoading = true, error = null) }
+        fetchNodes(NodeLoadMode.INITIAL)
+    }
+
+    /** 手动刷新（整体重新拉取） */
+    private fun refreshNodes() {
+        fetchNodes(NodeLoadMode.REFRESH)
+    }
+
+    private fun fetchNodes(mode: NodeLoadMode) {
+        updateLoadingState(mode, isLoading = true)
+        if (mode == NodeLoadMode.REFRESH) {
+            wsJob?.cancel()
+        }
         screenModelScope.launch {
             var activeServerId: Long? = null
             var activeRequires2fa = false
@@ -77,63 +89,65 @@ class NodeListViewModel(
                 activeRequires2fa = server.requires2fa
                 activeAuthType = server.authType
                 setState { copy(serverName = server.name) }
-
                 val sessionToken = ensureSession(server)
 
-                // 1. HTTP POST 获取节点基本信息 + 初始状态
                 val nodes = nodeRepository.getNodeInfos(server.baseUrl, sessionToken)
                 updateNodesState(nodes)
-                setState { copy(isLoading = false, error = null) }
+                updateLoadingState(mode, isLoading = false)
 
-                // 2. 启动 WebSocket 实时状态流
-                startWebSocketStatusFlow(server.baseUrl, sessionToken, nodes, server.id, server.requires2fa, server.authType)
+                startWebSocketStatusFlow(
+                        server.baseUrl,
+                        sessionToken,
+                        nodes,
+                        server.id,
+                        server.requires2fa,
+                        server.authType
+                )
             } catch (e: Exception) {
-                if (activeServerId != null && handleSessionExpired(activeServerId, activeRequires2fa, e, activeAuthType)) {
+                if (activeServerId != null &&
+                                handleSessionExpired(
+                                        activeServerId,
+                                        activeRequires2fa,
+                                        e,
+                                        activeAuthType
+                                )
+                ) {
                     return@launch
                 }
-                setState {
-                    copy(
-                            isLoading = false,
-                            error = context.getString(R.string.node_load_failed, e.message)
-                    )
-                }
+                handleFetchNodesError(mode, e)
             }
         }
     }
 
-    /** 手动刷新（整体重新拉取） */
-    private fun refreshNodes() {
-        setState { copy(isRefreshing = true) }
-        wsJob?.cancel()
-        screenModelScope.launch {
-            var activeServerId: Long? = null
-            var activeRequires2fa = false
-            var activeAuthType = AuthType.PASSWORD
-            try {
-                val server =
-                        serverRepository.getActive()
-                                ?: throw Exception(
-                                        context.getString(R.string.error_no_server_selected)
-                                )
-                activeServerId = server.id
-                activeRequires2fa = server.requires2fa
-                activeAuthType = server.authType
-                val sessionToken = ensureSession(server)
+    private fun updateLoadingState(mode: NodeLoadMode, isLoading: Boolean) {
+        when (mode) {
+            NodeLoadMode.INITIAL -> setState { copy(isLoading = isLoading, error = null) }
+            NodeLoadMode.REFRESH ->
+                    setState {
+                        if (isLoading) {
+                            copy(isRefreshing = true)
+                        } else {
+                            copy(isRefreshing = false, error = null)
+                        }
+                    }
+        }
+    }
 
-                val nodes = nodeRepository.getNodeInfos(server.baseUrl, sessionToken)
-                updateNodesState(nodes)
-                setState { copy(isRefreshing = false, error = null) }
-
-                // 重新启动 WebSocket
-                startWebSocketStatusFlow(server.baseUrl, sessionToken, nodes, server.id, server.requires2fa, server.authType)
-            } catch (e: Exception) {
-                if (activeServerId != null && handleSessionExpired(activeServerId, activeRequires2fa, e, activeAuthType)) {
-                    return@launch
+    private fun handleFetchNodesError(mode: NodeLoadMode, error: Exception) {
+        when (mode) {
+            NodeLoadMode.INITIAL -> {
+                setState {
+                    copy(
+                            isLoading = false,
+                            error = context.getString(R.string.node_load_failed, error.message)
+                    )
                 }
+            }
+            NodeLoadMode.REFRESH -> {
                 setState { copy(isRefreshing = false) }
                 sendEffect(
                         NodeListContract.Effect.ShowToast(
-                                context.getString(R.string.node_refresh_failed, e.message)
+                                context.getString(R.string.node_refresh_failed, error.message)
                         )
                 )
             }
@@ -254,5 +268,10 @@ class NodeListViewModel(
                 }
 
         setState { copy(filteredNodes = filtered) }
+    }
+
+    private enum class NodeLoadMode {
+        INITIAL,
+        REFRESH
     }
 }

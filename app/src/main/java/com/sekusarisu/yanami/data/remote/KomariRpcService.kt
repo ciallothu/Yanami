@@ -8,11 +8,7 @@ import com.sekusarisu.yanami.data.remote.dto.PingRecordsResponseDto
 import com.sekusarisu.yanami.data.remote.dto.RecentStatusItemDto
 import com.sekusarisu.yanami.domain.model.AuthType
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.websocket.ws
-import io.ktor.client.plugins.websocket.wss
 import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -157,16 +153,7 @@ class KomariRpcService(private val httpClient: HttpClient) {
             pingHours: Int? = null,
             authType: AuthType = AuthType.PASSWORD
     ): Flow<KomariWsEvent> = channelFlow {
-        val cleanUrl = baseUrl.trimEnd('/')
-        // 提取 host、port、path
-        val urlWithoutScheme = cleanUrl.removePrefix("https://").removePrefix("http://")
-        val host = urlWithoutScheme.substringBefore('/').substringBefore(':')
-        val portStr = urlWithoutScheme.substringBefore('/').substringAfter(':', "")
-        val isSecure = cleanUrl.startsWith("https")
-        val defaultPort = if (isSecure) 443 else 80
-        val port = portStr.toIntOrNull() ?: defaultPort
-        val pathPrefix = urlWithoutScheme.substringAfter(urlWithoutScheme.substringBefore('/'), "")
-        val wsPath = "$pathPrefix/api/rpc2"
+        val endpoint = buildKomariWebSocketEndpoint(baseUrl, "/api/rpc2")
 
         var requestId = 1
 
@@ -287,46 +274,15 @@ class KomariRpcService(private val httpClient: HttpClient) {
                     }
                 }
 
-        // Origin header — 服务器校验此头，缺失则返回 403
-        val origin = if (isSecure) "https://$host" else "http://$host"
-
-        // 外层循环：断开后自动重连
-        while (!isClosedForSend) {
-            try {
-                Log.d(TAG, "WebSocket connecting to $host:$port$wsPath (secure=$isSecure)")
-
-                if (isSecure) {
-                    httpClient.wss(
-                            host = host,
-                            port = port,
-                            path = wsPath,
-                            request = {
-                                applyAuth(sessionToken, authType)
-                                header("Origin", origin)
-                            },
-                            block = wsBlock
-                    )
-                } else {
-                    httpClient.ws(
-                            host = host,
-                            port = port,
-                            path = wsPath,
-                            request = {
-                                applyAuth(sessionToken, authType)
-                                header("Origin", origin)
-                            },
-                            block = wsBlock
-                    )
-                }
-            } catch (e: Exception) {
-                if (isWsAuthException(e)) {
-                    Log.w(TAG, "WebSocket auth error: ${e.message}, propagating")
-                    throw e
-                }
-                Log.w(TAG, "WebSocket error: ${e.message}, reconnecting in 5s...")
-                delay(5_000)
-            }
-        }
+        httpClient.runKomariWebSocketLifecycle(
+                endpoint = endpoint,
+                sessionToken = sessionToken,
+                authType = authType,
+                loggerTag = TAG,
+                reconnectDelayMs = 5_000L,
+                reconnectOnNormalClose = true,
+                block = wsBlock
+        )
     }
 
     // Observe combined records handled in observeNodesLatestStatus
@@ -356,16 +312,6 @@ class KomariRpcService(private val httpClient: HttpClient) {
                 }
 
         return response.bodyAsText()
-    }
-
-    private fun isWsAuthException(e: Exception): Boolean {
-        if (e is ClientRequestException) {
-            val status = e.response.status.value
-            return status == 401 || status == 403
-        }
-        val msg = (e.message ?: "").lowercase()
-        return msg.contains("403") || msg.contains("401") ||
-                msg.contains("forbidden") || msg.contains("unauthorized")
     }
 
     private fun checkRpcError(json: JsonObject) {

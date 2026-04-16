@@ -151,6 +151,8 @@
     <string name="client_management_auto_renewal_on">Auto-renew</string>
     <string name="client_management_auto_renewal_off">Manual renewal</string>
     <string name="client_management_create">New Client</string>
+    <string name="client_management_nav_clients">Clients</string>
+    <string name="client_management_nav_ping">Ping</string>
     <string name="client_create_hint">Name is optional. Leave it empty to let the server generate a default name.</string>
     <string name="client_create_failed">Failed to create client: %s</string>
     <string name="client_create_success_title">Client Created</string>
@@ -172,6 +174,35 @@
     <string name="client_edit_auto_renewal">Auto-renew</string>
     <string name="client_edit_hidden">Hidden</string>
     <string name="client_edit_traffic_limit_type">Traffic limit type</string>
+    <string name="ping_task_management_title">Ping Task Management</string>
+    <string name="ping_task_management_search">Search ping tasks…</string>
+    <string name="ping_task_management_total_count">Showing %1$d / %2$d</string>
+    <string name="ping_task_management_create">New Ping Task</string>
+    <string name="ping_task_management_empty">No matching ping tasks</string>
+    <string name="ping_task_management_load_failed">Failed to load ping tasks: %s</string>
+    <string name="ping_task_management_refresh_failed">Failed to refresh ping tasks: %s</string>
+    <string name="ping_task_management_save_failed">Failed to save ping task: %s</string>
+    <string name="ping_task_management_created">Ping task created</string>
+    <string name="ping_task_management_saved">Ping task saved</string>
+    <string name="ping_task_management_deleted">Deleted \"%s\"</string>
+    <string name="ping_task_management_delete_failed">Failed to delete ping task: %s</string>
+    <string name="ping_task_management_reorder_failed">Failed to update ping task order: %s</string>
+    <string name="ping_task_management_reordering">Updating ping task order…</string>
+    <string name="ping_task_management_guest_unsupported">Guest mode does not support ping task management</string>
+    <string name="ping_task_management_sort_mode">Sort mode</string>
+    <string name="ping_task_management_sort_mode_hint">Long press a card to drag and reorder</string>
+    <string name="ping_task_management_sort_mode_requires_all">Clear search and type filters before entering sort mode</string>
+    <string name="ping_task_management_target">Target</string>
+    <string name="ping_task_management_type">Type</string>
+    <string name="ping_task_management_clients">Clients</string>
+    <string name="ping_task_management_no_clients">No clients available</string>
+    <string name="ping_task_management_interval">Runs every %1$d seconds</string>
+    <string name="ping_task_management_interval_label">Interval (seconds)</string>
+    <string name="ping_task_management_delete_title">Delete Ping Task</string>
+    <string name="ping_task_management_delete_confirm">Delete \"%s\"? This action cannot be undone.</string>
+    <string name="ping_task_type_icmp">ICMP</string>
+    <string name="ping_task_type_tcp">TCP</string>
+    <string name="ping_task_type_http">HTTP</string>
 
     <!-- Node Detail -->
     <string name="node_detail_title">Node Detail</string>

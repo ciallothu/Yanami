@@ -151,6 +151,8 @@
     <string name="client_management_auto_renewal_on">自動更新</string>
     <string name="client_management_auto_renewal_off">手動更新</string>
     <string name="client_management_create">クライアントを新規作成</string>
+    <string name="client_management_nav_clients">Clients</string>
+    <string name="client_management_nav_ping">Ping</string>
     <string name="client_create_hint">名前は任意です。空欄の場合はサーバーがデフォルト名を生成します。</string>
     <string name="client_create_failed">クライアントの作成に失敗しました: %s</string>
     <string name="client_create_success_title">クライアントを作成しました</string>
@@ -172,6 +174,35 @@
     <string name="client_edit_auto_renewal">自動更新</string>
     <string name="client_edit_hidden">非表示</string>
     <string name="client_edit_traffic_limit_type">通信量制限タイプ</string>
+    <string name="ping_task_management_title">Ping Task 管理</string>
+    <string name="ping_task_management_search">Ping Task を検索…</string>
+    <string name="ping_task_management_total_count">%1$d / %2$d を表示中</string>
+    <string name="ping_task_management_create">Ping Task を新規作成</string>
+    <string name="ping_task_management_empty">一致する Ping Task がありません</string>
+    <string name="ping_task_management_load_failed">Ping Task の読み込みに失敗しました: %s</string>
+    <string name="ping_task_management_refresh_failed">Ping Task の更新に失敗しました: %s</string>
+    <string name="ping_task_management_save_failed">Ping Task の保存に失敗しました: %s</string>
+    <string name="ping_task_management_created">Ping Task を作成しました</string>
+    <string name="ping_task_management_saved">Ping Task を保存しました</string>
+    <string name="ping_task_management_deleted">「%s」を削除しました</string>
+    <string name="ping_task_management_delete_failed">Ping Task の削除に失敗しました: %s</string>
+    <string name="ping_task_management_reorder_failed">Ping Task の並び順更新に失敗しました: %s</string>
+    <string name="ping_task_management_reordering">Ping Task の並び順を更新しています…</string>
+    <string name="ping_task_management_guest_unsupported">ゲストモードでは Ping Task 管理を利用できません</string>
+    <string name="ping_task_management_sort_mode">並び替えモード</string>
+    <string name="ping_task_management_sort_mode_hint">カードを長押ししてドラッグ並び替え</string>
+    <string name="ping_task_management_sort_mode_requires_all">並び替えモードに入る前に検索と種類フィルタを解除してください</string>
+    <string name="ping_task_management_target">対象</string>
+    <string name="ping_task_management_type">種類</string>
+    <string name="ping_task_management_clients">対象クライアント</string>
+    <string name="ping_task_management_no_clients">利用可能なクライアントがありません</string>
+    <string name="ping_task_management_interval">%1$d 秒ごとに実行</string>
+    <string name="ping_task_management_interval_label">間隔（秒）</string>
+    <string name="ping_task_management_delete_title">Ping Task を削除</string>
+    <string name="ping_task_management_delete_confirm">「%s」を削除しますか？この操作は元に戻せません。</string>
+    <string name="ping_task_type_icmp">ICMP</string>
+    <string name="ping_task_type_tcp">TCP</string>
+    <string name="ping_task_type_http">HTTP</string>
 
     <!-- サーバー詳細 -->
     <string name="node_detail_title">サーバー詳細</string>

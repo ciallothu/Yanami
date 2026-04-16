@@ -151,6 +151,8 @@
     <string name="client_management_auto_renewal_on">自动续费</string>
     <string name="client_management_auto_renewal_off">手动续费</string>
     <string name="client_management_create">新建客户端</string>
+    <string name="client_management_nav_clients">客户端</string>
+    <string name="client_management_nav_ping">延迟监测</string>
     <string name="client_create_hint">可选填写名称；留空时服务端会生成默认名称。</string>
     <string name="client_create_failed">创建客户端失败: %s</string>
     <string name="client_create_success_title">客户端已创建</string>
@@ -172,6 +174,35 @@
     <string name="client_edit_auto_renewal">自动续费</string>
     <string name="client_edit_hidden">隐藏</string>
     <string name="client_edit_traffic_limit_type">流量限制类型</string>
+    <string name="ping_task_management_title">延迟监测</string>
+    <string name="ping_task_management_search">搜索延迟监测…</string>
+    <string name="ping_task_management_total_count">已显示 %1$d / %2$d</string>
+    <string name="ping_task_management_create">新建延迟监测</string>
+    <string name="ping_task_management_empty">没有匹配的延迟监测</string>
+    <string name="ping_task_management_load_failed">加载延迟监测失败: %s</string>
+    <string name="ping_task_management_refresh_failed">刷新延迟监测失败: %s</string>
+    <string name="ping_task_management_save_failed">保存延迟监测失败: %s</string>
+    <string name="ping_task_management_created">延迟监测已创建</string>
+    <string name="ping_task_management_saved">延迟监测已保存</string>
+    <string name="ping_task_management_deleted">已删除「%s」</string>
+    <string name="ping_task_management_delete_failed">删除延迟监测失败: %s</string>
+    <string name="ping_task_management_reorder_failed">更新延迟监测排序失败: %s</string>
+    <string name="ping_task_management_reordering">正在更新延迟监测排序…</string>
+    <string name="ping_task_management_guest_unsupported">游客模式不支持延迟监测</string>
+    <string name="ping_task_management_sort_mode">排序模式</string>
+    <string name="ping_task_management_sort_mode_hint">长按卡片可拖拽排序</string>
+    <string name="ping_task_management_sort_mode_requires_all">请先清除搜索和类型筛选，再进入排序模式</string>
+    <string name="ping_task_management_target">目标地址</string>
+    <string name="ping_task_management_type">检测类型</string>
+    <string name="ping_task_management_clients">关联客户端</string>
+    <string name="ping_task_management_no_clients">当前没有可选客户端</string>
+    <string name="ping_task_management_interval">%1$d 秒执行一次</string>
+    <string name="ping_task_management_interval_label">间隔（秒）</string>
+    <string name="ping_task_management_delete_title">删除延迟监测</string>
+    <string name="ping_task_management_delete_confirm">确定要删除「%s」吗？此操作不可恢复。</string>
+    <string name="ping_task_type_icmp">ICMP</string>
+    <string name="ping_task_type_tcp">TCP</string>
+    <string name="ping_task_type_http">HTTP</string>
 
     <!-- 节点详情 -->
     <string name="node_detail_title">节点详情</string>

@@ -30,9 +30,27 @@ class NodeListViewModel(
         ) {
 
     private var wsJob: Job? = null
+    private var resumeStreamingJob: Job? = null
+    private var isScreenStarted = false
+    private var latestStreamRequest: NodeStatusStreamRequest? = null
 
     init {
         loadNodes()
+    }
+
+    fun onScreenStarted() {
+        if (isScreenStarted) return
+        isScreenStarted = true
+        resumeStreamingIfNeeded()
+    }
+
+    fun onScreenStopped() {
+        if (!isScreenStarted) return
+        isScreenStarted = false
+        resumeStreamingJob?.cancel()
+        resumeStreamingJob = null
+        wsJob?.cancel()
+        wsJob = null
     }
 
     override fun onEvent(event: NodeListContract.Event) {
@@ -92,14 +110,24 @@ class NodeListViewModel(
                 updateNodesState(nodes)
                 updateLoadingState(mode, isLoading = false)
 
-                startWebSocketStatusFlow(
-                        server.baseUrl,
-                        sessionToken,
-                        nodes,
-                        server.id,
-                        server.requires2fa,
-                        server.authType
-                )
+                latestStreamRequest =
+                        NodeStatusStreamRequest(
+                                baseUrl = server.baseUrl,
+                                baseNodes = nodes,
+                                serverId = server.id,
+                                requires2fa = server.requires2fa,
+                                authType = server.authType
+                        )
+                if (isScreenStarted) {
+                    startWebSocketStatusFlow(
+                            server.baseUrl,
+                            sessionToken,
+                            nodes,
+                            server.id,
+                            server.requires2fa,
+                            server.authType
+                    )
+                }
             } catch (e: Exception) {
                 if (activeServerId != null &&
                                 handleSessionExpired(
@@ -190,6 +218,47 @@ class NodeListViewModel(
         return true
     }
 
+    private fun resumeStreamingIfNeeded() {
+        val streamRequest = latestStreamRequest ?: return
+        if (!isScreenStarted || currentState.isLoading || wsJob != null) return
+
+        resumeStreamingJob?.cancel()
+        resumeStreamingJob =
+                screenModelScope.launch {
+                    try {
+                        val activeServer = serverRepository.getActive() ?: return@launch
+                        if (activeServer.id != streamRequest.serverId) {
+                            loadNodes()
+                            return@launch
+                        }
+                        val sessionToken = ensureSession(activeServer)
+                        startWebSocketStatusFlow(
+                                baseUrl = streamRequest.baseUrl,
+                                sessionToken = sessionToken,
+                                baseNodes =
+                                        if (currentState.nodes.isNotEmpty()) currentState.nodes
+                                        else streamRequest.baseNodes,
+                                serverId = streamRequest.serverId,
+                                requires2fa = streamRequest.requires2fa,
+                                authType = streamRequest.authType
+                        )
+                    } catch (e: Exception) {
+                        if (!handleSessionExpired(
+                                        streamRequest.serverId,
+                                        streamRequest.requires2fa,
+                                        e,
+                                        streamRequest.authType
+                                )
+                        ) {
+                            android.util.Log.w(
+                                    "NodeListVM",
+                                    "Failed to resume status flow: ${e.message}"
+                            )
+                        }
+                    }
+                }
+    }
+
     /** 启动 WebSocket RPC 实时状态流 */
     private fun startWebSocketStatusFlow(
             baseUrl: String,
@@ -238,4 +307,12 @@ class NodeListViewModel(
         INITIAL,
         REFRESH
     }
+
+    private data class NodeStatusStreamRequest(
+            val baseUrl: String,
+            val baseNodes: List<Node>,
+            val serverId: Long,
+            val requires2fa: Boolean,
+            val authType: AuthType
+    )
 }

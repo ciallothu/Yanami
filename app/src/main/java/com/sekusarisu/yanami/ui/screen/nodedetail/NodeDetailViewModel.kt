@@ -35,9 +35,14 @@ class NodeDetailViewModel(
         ) {
 
         private var wsJob: Job? = null
+        private var resumeStreamingJob: Job? = null
         private var seedFetchJob: Job? = null
         private val realtimeLoadRecordBuffer = ArrayDeque<LoadRecord>(MAX_REALTIME_RECORDS)
         private val realtimeLoadRecordsState = mutableStateListOf<LoadRecord>()
+        private var isScreenStarted = false
+        private var activeStreamServerId: Long? = null
+        private var activeStreamRequires2fa = false
+        private var activeStreamAuthType = AuthType.PASSWORD
 
         companion object {
                 /** 实时模式最大数据点数（约 4 分钟，每 2 秒一个） */
@@ -47,6 +52,21 @@ class NodeDetailViewModel(
         init {
                 setState { copy(realtimeLoadRecords = realtimeLoadRecordsState) }
                 loadNodeDetail()
+        }
+
+        fun onScreenStarted() {
+                if (isScreenStarted) return
+                isScreenStarted = true
+                resumeStreamingIfNeeded()
+        }
+
+        fun onScreenStopped() {
+                if (!isScreenStarted) return
+                isScreenStarted = false
+                resumeStreamingJob?.cancel()
+                resumeStreamingJob = null
+                wsJob?.cancel()
+                wsJob = null
         }
 
         override fun onEvent(event: NodeDetailContract.Event) {
@@ -136,6 +156,9 @@ class NodeDetailViewModel(
                                                 authType = server.authType
                                         )
                                 }
+                                activeStreamServerId = server.id
+                                activeStreamRequires2fa = server.requires2fa
+                                activeStreamAuthType = server.authType
 
                                 // 实时模式（默认）：先拉取最近 1 分钟数据作为图表 seed
                                 if (currentState.selectedLoadHours == 0) {
@@ -190,6 +213,7 @@ class NodeDetailViewModel(
         }
 
         private fun startWebSocket() {
+                if (!isScreenStarted) return
                 wsJob?.cancel()
                 val currentStateSnapshot = currentState
                 currentStateSnapshot.node ?: return
@@ -199,11 +223,10 @@ class NodeDetailViewModel(
                         screenModelScope.launch {
                                 var activeServer: ServerInstance? =
                                         null
-                                try {
-                                        val server = serverRepository.getActive() ?: return@launch
-                                        activeServer = server
-                                        val sessionToken =
-                                                sessionManager.getSessionToken() ?: return@launch
+                                 try {
+                                         val server = serverRepository.getActive() ?: return@launch
+                                         activeServer = server
+                                        val sessionToken = ensureSession(server)
 
                                         nodeRepository.observeNodeDetailWs(
                                                         server.baseUrl,
@@ -306,6 +329,39 @@ class NodeDetailViewModel(
                                                         )
                                                 )
                                         )
+                                }
+                        }
+        }
+
+        private fun resumeStreamingIfNeeded() {
+                val serverId = activeStreamServerId ?: return
+                if (!isScreenStarted || currentState.isLoading || currentState.node == null || wsJob != null) {
+                        return
+                }
+
+                resumeStreamingJob?.cancel()
+                resumeStreamingJob =
+                        screenModelScope.launch {
+                                try {
+                                        val activeServer = serverRepository.getActive() ?: return@launch
+                                        if (activeServer.id != serverId) {
+                                                loadNodeDetail()
+                                                return@launch
+                                        }
+                                        startWebSocket()
+                                } catch (e: Exception) {
+                                        if (!handleSessionExpired(
+                                                                serverId,
+                                                                activeStreamRequires2fa,
+                                                                e,
+                                                                activeStreamAuthType
+                                                        )
+                                        ) {
+                                                android.util.Log.w(
+                                                        "NodeDetailVM",
+                                                        "Failed to resume detail stream: ${e.message}"
+                                                )
+                                        }
                                 }
                         }
         }

@@ -28,8 +28,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +41,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -61,11 +65,30 @@ class NodeListScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<NodeListViewModel>()
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
+        val lifecycleOwner = LocalLifecycleOwner.current
         val adaptiveInfo = rememberAdaptiveLayoutInfo()
         var isAllExpanded by remember { mutableStateOf(true) }
+
+        DisposableEffect(lifecycleOwner, viewModel) {
+            if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                viewModel.onScreenStarted()
+            }
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.onScreenStarted()
+                    Lifecycle.Event.ON_STOP -> viewModel.onScreenStopped()
+                    else -> Unit
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                viewModel.onScreenStopped()
+            }
+        }
 
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->

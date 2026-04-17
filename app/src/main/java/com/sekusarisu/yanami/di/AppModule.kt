@@ -1,6 +1,7 @@
 package com.sekusarisu.yanami.di
 
 import androidx.room.Room
+import com.sekusarisu.yanami.BuildConfig
 import com.sekusarisu.yanami.data.backup.ConfigBackupManager
 import com.sekusarisu.yanami.data.local.MIGRATION_2_3
 import com.sekusarisu.yanami.data.local.YanamiDatabase
@@ -64,7 +65,9 @@ val appModule = module {
                 )
             }
             install(WebSockets)
-            install(Logging) { level = LogLevel.BODY }
+            install(Logging) {
+                level = if (BuildConfig.DEBUG) LogLevel.BODY else LogLevel.NONE
+            }
         }
     }
 
@@ -72,7 +75,6 @@ val appModule = module {
     single {
         Room.databaseBuilder(androidContext(), YanamiDatabase::class.java, "yanami_database")
                 .addMigrations(MIGRATION_2_3)
-                .fallbackToDestructiveMigration()
                 .build()
     }
 

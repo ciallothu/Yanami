@@ -24,9 +24,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -45,27 +42,13 @@ internal fun NodeDetailContent(
         onPingHoursChanged: (Int) -> Unit
 ) {
     val node = state.node ?: return
-    val loadRecords =
-            if (state.selectedLoadHours == 0) state.realtimeLoadRecords else state.loadRecords
+    val loadChartData =
+            if (state.selectedLoadHours == 0) {
+                state.realtimeLoadChartData
+            } else {
+                state.loadChartData
+            }
     val loadIsLoading = state.selectedLoadHours != 0 && state.isLoadRecordsLoading
-    val times by remember(loadRecords) { derivedStateOf { loadRecords.map { it.time } } }
-    val cpuData by remember(loadRecords) { derivedStateOf { loadRecords.map { it.cpu } } }
-    val ramData by remember(loadRecords) { derivedStateOf { loadRecords.map { it.ramPercent } } }
-    val netInData by remember(loadRecords) {
-        derivedStateOf { loadRecords.map { it.netIn.toDouble() } }
-    }
-    val netOutData by remember(loadRecords) {
-        derivedStateOf { loadRecords.map { it.netOut.toDouble() } }
-    }
-    val tcpData by remember(loadRecords) {
-        derivedStateOf { loadRecords.map { it.connections } }
-    }
-    val udpData by remember(loadRecords) {
-        derivedStateOf { loadRecords.map { it.connectionsUdp } }
-    }
-    val processData by remember(loadRecords) {
-        derivedStateOf { loadRecords.map { it.process.toDouble() } }
-    }
 
     AdaptiveContentPane(maxWidth = if (isTabletLandscape) 1440.dp else 920.dp) {
         LazyColumn(
@@ -92,7 +75,7 @@ internal fun NodeDetailContent(
                         ) { CircularProgressIndicator(modifier = Modifier.size(32.dp)) }
                     }
                 }
-            } else if (loadRecords.isEmpty()) {
+            } else if (loadChartData.timeLabels.isEmpty()) {
                 item {
                     ChartSectionSurface {
                         Box(
@@ -119,8 +102,8 @@ internal fun NodeDetailContent(
                                 first = {
                                     ChartCard(
                                             title = stringResource(R.string.node_detail_cpu_usage),
-                                            data = cpuData,
-                                            times = times,
+                                            data = loadChartData.cpuSeries,
+                                            times = loadChartData.timeLabels,
                                             color = MaterialTheme.colorScheme.primary,
                                             suffix = "%",
                                             chartAnimationEnabled = chartAnimationEnabled
@@ -129,8 +112,8 @@ internal fun NodeDetailContent(
                                 second = {
                                     ChartCard(
                                             title = stringResource(R.string.node_detail_ram),
-                                            data = ramData,
-                                            times = times,
+                                            data = loadChartData.ramSeries,
+                                            times = loadChartData.timeLabels,
                                             color = MaterialTheme.colorScheme.primary,
                                             suffix = "%",
                                             chartAnimationEnabled = chartAnimationEnabled
@@ -143,18 +126,18 @@ internal fun NodeDetailContent(
                                 first = {
                                     NetworkChartCard(
                                             title = stringResource(R.string.node_detail_net_speed),
-                                            netInData = netInData,
-                                            netOutData = netOutData,
-                                            times = times,
+                                            netInData = loadChartData.netInSeries,
+                                            netOutData = loadChartData.netOutSeries,
+                                            times = loadChartData.timeLabels,
                                             chartAnimationEnabled = chartAnimationEnabled
                                     )
                                 },
                                 second = {
                                     ConnectionChartCard(
                                             title = stringResource(R.string.node_detail_connections),
-                                            tcpData = tcpData,
-                                            udpData = udpData,
-                                            times = times,
+                                            tcpData = loadChartData.tcpSeries,
+                                            udpData = loadChartData.udpSeries,
+                                            times = loadChartData.timeLabels,
                                             suffix = "",
                                             chartAnimationEnabled = chartAnimationEnabled
                                     )
@@ -165,8 +148,8 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             ChartCard(
                                     title = stringResource(R.string.node_detail_process),
-                                    data = processData,
-                                    times = times,
+                                    data = loadChartData.processSeries,
+                                    times = loadChartData.timeLabels,
                                     color = MaterialTheme.colorScheme.primary,
                                     suffix = "",
                                     chartAnimationEnabled = chartAnimationEnabled
@@ -178,8 +161,8 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             ChartCard(
                                     title = stringResource(R.string.node_detail_cpu_usage),
-                                    data = cpuData,
-                                    times = times,
+                                    data = loadChartData.cpuSeries,
+                                    times = loadChartData.timeLabels,
                                     color = MaterialTheme.colorScheme.primary,
                                     suffix = "%",
                                     chartAnimationEnabled = chartAnimationEnabled
@@ -190,8 +173,8 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             ChartCard(
                                     title = stringResource(R.string.node_detail_ram),
-                                    data = ramData,
-                                    times = times,
+                                    data = loadChartData.ramSeries,
+                                    times = loadChartData.timeLabels,
                                     color = MaterialTheme.colorScheme.primary,
                                     suffix = "%",
                                     chartAnimationEnabled = chartAnimationEnabled
@@ -202,9 +185,9 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             NetworkChartCard(
                                     title = stringResource(R.string.node_detail_net_speed),
-                                    netInData = netInData,
-                                    netOutData = netOutData,
-                                    times = times,
+                                    netInData = loadChartData.netInSeries,
+                                    netOutData = loadChartData.netOutSeries,
+                                    times = loadChartData.timeLabels,
                                     chartAnimationEnabled = chartAnimationEnabled
                             )
                         }
@@ -213,9 +196,9 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             ConnectionChartCard(
                                     title = stringResource(R.string.node_detail_connections),
-                                    tcpData = tcpData,
-                                    udpData = udpData,
-                                    times = times,
+                                    tcpData = loadChartData.tcpSeries,
+                                    udpData = loadChartData.udpSeries,
+                                    times = loadChartData.timeLabels,
                                     suffix = "",
                                     chartAnimationEnabled = chartAnimationEnabled
                             )
@@ -225,8 +208,8 @@ internal fun NodeDetailContent(
                         ChartSectionSurface {
                             ChartCard(
                                     title = stringResource(R.string.node_detail_process),
-                                    data = processData,
-                                    times = times,
+                                    data = loadChartData.processSeries,
+                                    times = loadChartData.timeLabels,
                                     color = MaterialTheme.colorScheme.primary,
                                     suffix = "",
                                     chartAnimationEnabled = chartAnimationEnabled
@@ -269,16 +252,10 @@ internal fun NodeDetailContent(
                     }
                 }
             } else {
-                val recordsByTask =
-                        state.pingRecords.groupBy { it.taskId }.mapValues { entry ->
-                            entry.value.sortedBy { it.time }.let { records ->
-                                records.map { it.value } to records.map { it.time }
-                            }
-                        }
                 state.pingTasks.forEach { task ->
                     val taskId = task.id
-                    val records = recordsByTask[taskId]
-                    if (records == null || records.first.isEmpty()) {
+                    val records = state.pingChartByTaskId[taskId]
+                    if (records == null || records.values.isEmpty()) {
                         item(key = "ping_empty_$taskId") {
                             ChartSectionSurface {
                                 Box(
@@ -299,8 +276,8 @@ internal fun NodeDetailContent(
                             ChartSectionSurface {
                                 PingTaskChart(
                                         task = task,
-                                        values = records.first,
-                                        times = records.second,
+                                        values = records.values,
+                                        times = records.times,
                                         chartAnimationEnabled = chartAnimationEnabled
                                 )
                             }

@@ -1,14 +1,14 @@
 package com.sekusarisu.yanami.ui.screen.nodedetail
 
 import android.content.Context
-import androidx.compose.runtime.mutableStateListOf
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.data.remote.SessionManager
+import com.sekusarisu.yanami.data.remote.dto.NodeStatusDto
 import com.sekusarisu.yanami.domain.model.AuthType
 import com.sekusarisu.yanami.domain.model.LoadRecord
 import com.sekusarisu.yanami.domain.model.Node
-import com.sekusarisu.yanami.data.remote.dto.NodeStatusDto
+import com.sekusarisu.yanami.domain.model.PingRecord
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.domain.repository.NodeRepository
 import com.sekusarisu.yanami.domain.repository.Requires2FAException
@@ -38,7 +38,14 @@ class NodeDetailViewModel(
         private var resumeStreamingJob: Job? = null
         private var seedFetchJob: Job? = null
         private val realtimeLoadRecordBuffer = ArrayDeque<LoadRecord>(MAX_REALTIME_RECORDS)
-        private val realtimeLoadRecordsState = mutableStateListOf<LoadRecord>()
+        private val realtimeTimeLabelBuffer = ArrayDeque<String>(MAX_REALTIME_RECORDS)
+        private val realtimeCpuSeriesBuffer = ArrayDeque<Double>(MAX_REALTIME_RECORDS)
+        private val realtimeRamSeriesBuffer = ArrayDeque<Double>(MAX_REALTIME_RECORDS)
+        private val realtimeNetInSeriesBuffer = ArrayDeque<Double>(MAX_REALTIME_RECORDS)
+        private val realtimeNetOutSeriesBuffer = ArrayDeque<Double>(MAX_REALTIME_RECORDS)
+        private val realtimeTcpSeriesBuffer = ArrayDeque<Int>(MAX_REALTIME_RECORDS)
+        private val realtimeUdpSeriesBuffer = ArrayDeque<Int>(MAX_REALTIME_RECORDS)
+        private val realtimeProcessSeriesBuffer = ArrayDeque<Double>(MAX_REALTIME_RECORDS)
         private var isScreenStarted = false
         private var activeStreamServerId: Long? = null
         private var activeStreamRequires2fa = false
@@ -50,7 +57,6 @@ class NodeDetailViewModel(
         }
 
         init {
-                setState { copy(realtimeLoadRecords = realtimeLoadRecordsState) }
                 loadNodeDetail()
         }
 
@@ -83,7 +89,8 @@ class NodeDetailViewModel(
                                         copy(
                                                 selectedLoadHours = event.hours,
                                                 isLoadRecordsLoading = event.hours > 0,
-                                                realtimeLoadRecords = realtimeLoadRecordsState
+                                                realtimeLoadChartData =
+                                                        snapshotRealtimeLoadChartData()
                                         )
                                 }
                                 if (switchingToRealtime) {
@@ -92,8 +99,8 @@ class NodeDetailViewModel(
                                                 replaceRealtimeRecords(recentRecords)
                                                 setState {
                                                         copy(
-                                                                realtimeLoadRecords =
-                                                                        realtimeLoadRecordsState
+                                                                realtimeLoadChartData =
+                                                                        snapshotRealtimeLoadChartData()
                                                         )
                                                 }
                                                 startWebSocket()
@@ -170,7 +177,10 @@ class NodeDetailViewModel(
                                         }
                                         replaceRealtimeRecords(recentRecords)
                                         setState {
-                                                copy(realtimeLoadRecords = realtimeLoadRecordsState)
+                                                copy(
+                                                        realtimeLoadChartData =
+                                                                snapshotRealtimeLoadChartData()
+                                                )
                                         }
                                 }
 
@@ -272,8 +282,8 @@ class NodeDetailViewModel(
                                                                                         copy(
                                                                                                 node =
                                                                                                         updatedNode,
-                                                                                                realtimeLoadRecords =
-                                                                                                        realtimeLoadRecordsState
+                                                                                                realtimeLoadChartData =
+                                                                                                        snapshotRealtimeLoadChartData()
                                                                                         )
                                                                                 }
                                                                         }
@@ -281,8 +291,10 @@ class NodeDetailViewModel(
                                                                 is NodeRepository.NodeDetailWsEvent.LoadRecords -> {
                                                                         setState {
                                                                                 copy(
-                                                                                        loadRecords =
-                                                                                                event.records,
+                                                                                        loadChartData =
+                                                                                                buildLoadChartData(
+                                                                                                        event.records
+                                                                                                ),
                                                                                         isLoadRecordsLoading =
                                                                                                 false
                                                                                 )
@@ -293,8 +305,10 @@ class NodeDetailViewModel(
                                                                                 copy(
                                                                                         pingTasks =
                                                                                                 event.tasks,
-                                                                                        pingRecords =
-                                                                                                event.records,
+                                                                                        pingChartByTaskId =
+                                                                                                buildPingChartByTaskId(
+                                                                                                        event.records
+                                                                                                ),
                                                                                         isPingRecordsLoading =
                                                                                                 false
                                                                                 )
@@ -413,22 +427,122 @@ class NodeDetailViewModel(
 
         private fun replaceRealtimeRecords(records: List<LoadRecord>) {
                 realtimeLoadRecordBuffer.clear()
+                clearRealtimeChartBuffers()
                 records.takeLast(MAX_REALTIME_RECORDS).forEach { record ->
                         realtimeLoadRecordBuffer.addLast(record)
+                        appendRealtimeChartPoint(record)
                 }
-                realtimeLoadRecordsState.clear()
-                realtimeLoadRecordsState.addAll(realtimeLoadRecordBuffer)
         }
 
         private fun appendRealtimeRecord(record: LoadRecord) {
                 if (realtimeLoadRecordBuffer.size == MAX_REALTIME_RECORDS) {
                         realtimeLoadRecordBuffer.removeFirst()
-                        if (realtimeLoadRecordsState.isNotEmpty()) {
-                                realtimeLoadRecordsState.removeAt(0)
-                        }
+                        dropOldestRealtimeChartPoint()
                 }
                 realtimeLoadRecordBuffer.addLast(record)
-                realtimeLoadRecordsState.add(record)
+                appendRealtimeChartPoint(record)
+        }
+
+        private fun clearRealtimeChartBuffers() {
+                realtimeTimeLabelBuffer.clear()
+                realtimeCpuSeriesBuffer.clear()
+                realtimeRamSeriesBuffer.clear()
+                realtimeNetInSeriesBuffer.clear()
+                realtimeNetOutSeriesBuffer.clear()
+                realtimeTcpSeriesBuffer.clear()
+                realtimeUdpSeriesBuffer.clear()
+                realtimeProcessSeriesBuffer.clear()
+        }
+
+        private fun appendRealtimeChartPoint(record: LoadRecord) {
+                realtimeTimeLabelBuffer.addLast(record.time)
+                realtimeCpuSeriesBuffer.addLast(record.cpu)
+                realtimeRamSeriesBuffer.addLast(record.ramPercent)
+                realtimeNetInSeriesBuffer.addLast(record.netIn.toDouble())
+                realtimeNetOutSeriesBuffer.addLast(record.netOut.toDouble())
+                realtimeTcpSeriesBuffer.addLast(record.connections)
+                realtimeUdpSeriesBuffer.addLast(record.connectionsUdp)
+                realtimeProcessSeriesBuffer.addLast(record.process.toDouble())
+        }
+
+        private fun dropOldestRealtimeChartPoint() {
+                realtimeTimeLabelBuffer.removeFirstOrNull()
+                realtimeCpuSeriesBuffer.removeFirstOrNull()
+                realtimeRamSeriesBuffer.removeFirstOrNull()
+                realtimeNetInSeriesBuffer.removeFirstOrNull()
+                realtimeNetOutSeriesBuffer.removeFirstOrNull()
+                realtimeTcpSeriesBuffer.removeFirstOrNull()
+                realtimeUdpSeriesBuffer.removeFirstOrNull()
+                realtimeProcessSeriesBuffer.removeFirstOrNull()
+        }
+
+        private fun snapshotRealtimeLoadChartData(): NodeDetailContract.LoadChartData {
+                return NodeDetailContract.LoadChartData(
+                        timeLabels = realtimeTimeLabelBuffer.toList(),
+                        cpuSeries = realtimeCpuSeriesBuffer.toList(),
+                        ramSeries = realtimeRamSeriesBuffer.toList(),
+                        netInSeries = realtimeNetInSeriesBuffer.toList(),
+                        netOutSeries = realtimeNetOutSeriesBuffer.toList(),
+                        tcpSeries = realtimeTcpSeriesBuffer.toList(),
+                        udpSeries = realtimeUdpSeriesBuffer.toList(),
+                        processSeries = realtimeProcessSeriesBuffer.toList()
+                )
+        }
+
+        private fun buildLoadChartData(records: List<LoadRecord>): NodeDetailContract.LoadChartData {
+                if (records.isEmpty()) {
+                        return NodeDetailContract.LoadChartData()
+                }
+
+                val timeLabels = ArrayList<String>(records.size)
+                val cpuSeries = ArrayList<Double>(records.size)
+                val ramSeries = ArrayList<Double>(records.size)
+                val netInSeries = ArrayList<Double>(records.size)
+                val netOutSeries = ArrayList<Double>(records.size)
+                val tcpSeries = ArrayList<Int>(records.size)
+                val udpSeries = ArrayList<Int>(records.size)
+                val processSeries = ArrayList<Double>(records.size)
+
+                records.forEach { record ->
+                        timeLabels.add(record.time)
+                        cpuSeries.add(record.cpu)
+                        ramSeries.add(record.ramPercent)
+                        netInSeries.add(record.netIn.toDouble())
+                        netOutSeries.add(record.netOut.toDouble())
+                        tcpSeries.add(record.connections)
+                        udpSeries.add(record.connectionsUdp)
+                        processSeries.add(record.process.toDouble())
+                }
+
+                return NodeDetailContract.LoadChartData(
+                        timeLabels = timeLabels,
+                        cpuSeries = cpuSeries,
+                        ramSeries = ramSeries,
+                        netInSeries = netInSeries,
+                        netOutSeries = netOutSeries,
+                        tcpSeries = tcpSeries,
+                        udpSeries = udpSeries,
+                        processSeries = processSeries
+                )
+        }
+
+        private fun buildPingChartByTaskId(
+                records: List<PingRecord>
+        ): Map<Int, NodeDetailContract.PingChartData> {
+                if (records.isEmpty()) {
+                        return emptyMap()
+                }
+
+                return records.groupBy { it.taskId }.mapValues { (_, taskRecords) ->
+                        val sortedRecords = taskRecords.sortedBy { it.time }
+                        val values = ArrayList<Double>(sortedRecords.size)
+                        val times = ArrayList<String>(sortedRecords.size)
+                        sortedRecords.forEach { record ->
+                                values.add(record.value)
+                                times.add(record.time)
+                        }
+                        NodeDetailContract.PingChartData(values = values, times = times)
+                }
         }
 
         private suspend fun ensureSession(

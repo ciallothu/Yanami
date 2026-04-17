@@ -39,15 +39,12 @@ class NodeListViewModel(
         when (event) {
             is NodeListContract.Event.SearchQueryChanged -> {
                 setState { copy(searchQuery = event.query) }
-                applyFilters()
             }
             is NodeListContract.Event.GroupSelected -> {
                 setState { copy(selectedGroup = event.group) }
-                applyFilters()
             }
             is NodeListContract.Event.StatusFilterSelected -> {
                 setState { copy(statusFilter = event.filter) }
-                applyFilters()
             }
             is NodeListContract.Event.Refresh -> refreshNodes()
             is NodeListContract.Event.Retry -> loadNodes()
@@ -235,39 +232,6 @@ class NodeListViewModel(
                     totalTrafficDown = onlineNodes.sumOf { it.netTotalDown }
             )
         }
-        applyFilters()
-    }
-
-    /** 根据搜索、分组和状态条件过滤节点 */
-    private fun applyFilters() {
-        val state = currentState
-        val filtered =
-                state.nodes.filter { node ->
-                    val matchesSearch =
-                            if (state.searchQuery.isBlank()) true
-                            else {
-                                val query = state.searchQuery.lowercase()
-                                node.name.lowercase().contains(query) ||
-                                        node.region.lowercase().contains(query) ||
-                                        node.os.lowercase().contains(query) ||
-                                        node.cpuName.lowercase().contains(query)
-                            }
-
-                    val matchesGroup =
-                            if (state.selectedGroup == null) true
-                            else node.group == state.selectedGroup
-
-                    val matchesStatus =
-                            when (state.statusFilter) {
-                                NodeListContract.StatusFilter.ALL -> true
-                                NodeListContract.StatusFilter.ONLINE -> node.isOnline
-                                NodeListContract.StatusFilter.OFFLINE -> !node.isOnline
-                            }
-
-                    matchesSearch && matchesGroup && matchesStatus
-                }
-
-        setState { copy(filteredNodes = filtered) }
     }
 
     private enum class NodeLoadMode {

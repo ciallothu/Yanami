@@ -1,11 +1,14 @@
 package com.sekusarisu.yanami.ui.screen.nodedetail
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateListOf
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.data.remote.SessionManager
 import com.sekusarisu.yanami.domain.model.AuthType
 import com.sekusarisu.yanami.domain.model.LoadRecord
+import com.sekusarisu.yanami.domain.model.Node
+import com.sekusarisu.yanami.data.remote.dto.NodeStatusDto
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.domain.repository.NodeRepository
 import com.sekusarisu.yanami.domain.repository.Requires2FAException
@@ -15,8 +18,6 @@ import com.sekusarisu.yanami.mvi.MviViewModel
 import com.sekusarisu.yanami.ui.screen.isSessionAuthError
 import com.sekusarisu.yanami.ui.screen.isTwoFaHint
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -35,16 +36,16 @@ class NodeDetailViewModel(
 
         private var wsJob: Job? = null
         private var seedFetchJob: Job? = null
+        private val realtimeLoadRecordBuffer = ArrayDeque<LoadRecord>(MAX_REALTIME_RECORDS)
+        private val realtimeLoadRecordsState = mutableStateListOf<LoadRecord>()
 
         companion object {
                 /** 实时模式最大数据点数（约 4 分钟，每 2 秒一个） */
                 private const val MAX_REALTIME_RECORDS = 120
-                private val isoFormatter = DateTimeFormatter.ISO_INSTANT
-                private val timeFormatter =
-                        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
         }
 
         init {
+                setState { copy(realtimeLoadRecords = realtimeLoadRecordsState) }
                 loadNodeDetail()
         }
 
@@ -55,20 +56,26 @@ class NodeDetailViewModel(
                         is NodeDetailContract.Event.LoadHoursChanged -> {
                                 val switchingToRealtime = event.hours == 0
                                 seedFetchJob?.cancel()
+                                if (switchingToRealtime) {
+                                        replaceRealtimeRecords(emptyList())
+                                }
                                 setState {
                                         copy(
                                                 selectedLoadHours = event.hours,
                                                 isLoadRecordsLoading = event.hours > 0,
-                                                // 切换到实时模式时清空，等待 recent 数据填充
-                                                realtimeLoadRecords =
-                                                        if (switchingToRealtime) emptyList()
-                                                        else realtimeLoadRecords
+                                                realtimeLoadRecords = realtimeLoadRecordsState
                                         )
                                 }
                                 if (switchingToRealtime) {
                                         seedFetchJob = screenModelScope.launch {
                                                 val recentRecords = fetchRecentAsSeed()
-                                                setState { copy(realtimeLoadRecords = recentRecords) }
+                                                replaceRealtimeRecords(recentRecords)
+                                                setState {
+                                                        copy(
+                                                                realtimeLoadRecords =
+                                                                        realtimeLoadRecordsState
+                                                        )
+                                                }
                                                 startWebSocket()
                                         }
                                 } else {
@@ -138,7 +145,10 @@ class NodeDetailViewModel(
                                         } catch (_: Exception) {
                                                 emptyList()
                                         }
-                                        setState { copy(realtimeLoadRecords = recentRecords) }
+                                        replaceRealtimeRecords(recentRecords)
+                                        setState {
+                                                copy(realtimeLoadRecords = realtimeLoadRecordsState)
+                                        }
                                 }
 
                                 // 启动复用的 WebSocket 获取实时状态和历史记录
@@ -182,7 +192,7 @@ class NodeDetailViewModel(
         private fun startWebSocket() {
                 wsJob?.cancel()
                 val currentStateSnapshot = currentState
-                val node = currentStateSnapshot.node ?: return
+                currentStateSnapshot.node ?: return
                 val isRealtime = currentStateSnapshot.selectedLoadHours == 0
 
                 wsJob =
@@ -216,131 +226,31 @@ class NodeDetailViewModel(
                                                                                 event.statusMap
                                                                         val status = statusMap[uuid]
                                                                         if (status != null) {
+                                                                                val currentNode =
+                                                                                        currentState
+                                                                                                .node
+                                                                                                ?: return@collect
+                                                                                val updatedNode =
+                                                                                        mergeNodeStatus(
+                                                                                                currentNode,
+                                                                                                status
+                                                                                        )
+                                                                                if (currentState.selectedLoadHours ==
+                                                                                                0
+                                                                                ) {
+                                                                                        appendRealtimeRecord(
+                                                                                                buildRealtimeRecord(
+                                                                                                        updatedNode,
+                                                                                                        status
+                                                                                                )
+                                                                                        )
+                                                                                }
                                                                                 setState {
-                                                                                        val currentUserNode =
-                                                                                                this.node
-                                                                                                        ?: return@setState this
-
-                                                                                        // 更新节点实时状态
-                                                                                        val updatedNode =
-                                                                                                currentUserNode
-                                                                                                        .copy(
-                                                                                                                isOnline =
-                                                                                                                        status.online,
-                                                                                                                cpuUsage =
-                                                                                                                        status.cpu,
-                                                                                                                memUsed =
-                                                                                                                        status.ram,
-                                                                                                                memTotal =
-                                                                                                                        if (status.ramTotal >
-                                                                                                                                        0
-                                                                                                                        )
-                                                                                                                                status.ramTotal
-                                                                                                                        else
-                                                                                                                                currentUserNode
-                                                                                                                                        .memTotal,
-                                                                                                                swapUsed =
-                                                                                                                        status.swap,
-                                                                                                                swapTotal =
-                                                                                                                        if (status.swapTotal >
-                                                                                                                                        0
-                                                                                                                        )
-                                                                                                                                status.swapTotal
-                                                                                                                        else
-                                                                                                                                currentUserNode
-                                                                                                                                        .swapTotal,
-                                                                                                                diskUsed =
-                                                                                                                        status.disk,
-                                                                                                                diskTotal =
-                                                                                                                        if (status.diskTotal >
-                                                                                                                                        0
-                                                                                                                        )
-                                                                                                                                status.diskTotal
-                                                                                                                        else
-                                                                                                                                currentUserNode
-                                                                                                                                        .diskTotal,
-                                                                                                                netIn =
-                                                                                                                        status.netIn,
-                                                                                                                netOut =
-                                                                                                                        status.netOut,
-                                                                                                                netTotalUp =
-                                                                                                                        status.netTotalUp,
-                                                                                                                netTotalDown =
-                                                                                                                        status.netTotalDown,
-                                                                                                                uptime =
-                                                                                                                        status.uptime,
-                                                                                                                load1 =
-                                                                                                                        status.load,
-                                                                                                                load5 =
-                                                                                                                        status.load5,
-                                                                                                                load15 =
-                                                                                                                        status.load15,
-                                                                                                                process =
-                                                                                                                        status.process,
-                                                                                                                connectionsTcp =
-                                                                                                                        status.connections,
-                                                                                                                connectionsUdp =
-                                                                                                                        status.connectionsUdp
-                                                                                                        )
-
-                                                                                        // 实时模式：将状态转换为 LoadRecord 并追加
-                                                                                        val newRealtimeRecords =
-                                                                                                if (selectedLoadHours ==
-                                                                                                                0
-                                                                                                ) {
-                                                                                                        val ramPercent =
-                                                                                                                if (updatedNode
-                                                                                                                                .memTotal >
-                                                                                                                                0
-                                                                                                                )
-                                                                                                                        updatedNode
-                                                                                                                                .memUsed
-                                                                                                                                .toDouble() /
-                                                                                                                                updatedNode
-                                                                                                                                        .memTotal *
-                                                                                                                                100
-                                                                                                                else
-                                                                                                                        0.0
-                                                                                                        val now =
-                                                                                                                Instant.now()
-                                                                                                                        .toString()
-                                                                                                        val record =
-                                                                                                                LoadRecord(
-                                                                                                                        time =
-                                                                                                                                now,
-                                                                                                                        cpu =
-                                                                                                                                status.cpu,
-                                                                                                                        ramPercent =
-                                                                                                                                ramPercent,
-                                                                                                                        diskPercent =
-                                                                                                                                0.0,
-                                                                                                                        netIn =
-                                                                                                                                status.netIn,
-                                                                                                                        netOut =
-                                                                                                                                status.netOut,
-                                                                                                                        load =
-                                                                                                                                status.load,
-                                                                                                                        process =
-                                                                                                                                status.process,
-                                                                                                                        connections =
-                                                                                                                                status.connections,
-                                                                                                                        connectionsUdp =
-                                                                                                                                status.connectionsUdp
-                                                                                                                )
-                                                                                                        (realtimeLoadRecords +
-                                                                                                                        record)
-                                                                                                                .takeLast(
-                                                                                                                        MAX_REALTIME_RECORDS
-                                                                                                                )
-                                                                                                } else {
-                                                                                                        realtimeLoadRecords
-                                                                                                }
-
                                                                                         copy(
                                                                                                 node =
                                                                                                         updatedNode,
                                                                                                 realtimeLoadRecords =
-                                                                                                        newRealtimeRecords
+                                                                                                        realtimeLoadRecordsState
                                                                                         )
                                                                                 }
                                                                         }
@@ -398,6 +308,71 @@ class NodeDetailViewModel(
                                         )
                                 }
                         }
+        }
+
+        private fun mergeNodeStatus(node: Node, status: NodeStatusDto): Node {
+                return node.copy(
+                        isOnline = status.online,
+                        cpuUsage = status.cpu,
+                        memUsed = status.ram,
+                        memTotal = if (status.ramTotal > 0) status.ramTotal else node.memTotal,
+                        swapUsed = status.swap,
+                        swapTotal = if (status.swapTotal > 0) status.swapTotal else node.swapTotal,
+                        diskUsed = status.disk,
+                        diskTotal = if (status.diskTotal > 0) status.diskTotal else node.diskTotal,
+                        netIn = status.netIn,
+                        netOut = status.netOut,
+                        netTotalUp = status.netTotalUp,
+                        netTotalDown = status.netTotalDown,
+                        uptime = status.uptime,
+                        load1 = status.load,
+                        load5 = status.load5,
+                        load15 = status.load15,
+                        process = status.process,
+                        connectionsTcp = status.connections,
+                        connectionsUdp = status.connectionsUdp
+                )
+        }
+
+        private fun buildRealtimeRecord(node: Node, status: NodeStatusDto): LoadRecord {
+                val ramPercent =
+                        if (node.memTotal > 0) {
+                                node.memUsed.toDouble() / node.memTotal * 100
+                        } else {
+                                0.0
+                        }
+                return LoadRecord(
+                        time = Instant.now().toString(),
+                        cpu = status.cpu,
+                        ramPercent = ramPercent,
+                        diskPercent = 0.0,
+                        netIn = status.netIn,
+                        netOut = status.netOut,
+                        load = status.load,
+                        process = status.process,
+                        connections = status.connections,
+                        connectionsUdp = status.connectionsUdp
+                )
+        }
+
+        private fun replaceRealtimeRecords(records: List<LoadRecord>) {
+                realtimeLoadRecordBuffer.clear()
+                records.takeLast(MAX_REALTIME_RECORDS).forEach { record ->
+                        realtimeLoadRecordBuffer.addLast(record)
+                }
+                realtimeLoadRecordsState.clear()
+                realtimeLoadRecordsState.addAll(realtimeLoadRecordBuffer)
+        }
+
+        private fun appendRealtimeRecord(record: LoadRecord) {
+                if (realtimeLoadRecordBuffer.size == MAX_REALTIME_RECORDS) {
+                        realtimeLoadRecordBuffer.removeFirst()
+                        if (realtimeLoadRecordsState.isNotEmpty()) {
+                                realtimeLoadRecordsState.removeAt(0)
+                        }
+                }
+                realtimeLoadRecordBuffer.addLast(record)
+                realtimeLoadRecordsState.add(record)
         }
 
         private suspend fun ensureSession(

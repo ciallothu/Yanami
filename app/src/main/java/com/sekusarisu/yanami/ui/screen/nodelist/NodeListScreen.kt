@@ -30,6 +30,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -210,6 +211,17 @@ private fun NodeListContent(
         isAllExpanded: Boolean,
         isTabletLandscape: Boolean
 ) {
+    val filteredNodes by
+            remember(state.nodes, state.searchQuery, state.selectedGroup, state.statusFilter) {
+                derivedStateOf {
+                    filterNodes(
+                            nodes = state.nodes,
+                            searchQuery = state.searchQuery,
+                            selectedGroup = state.selectedGroup,
+                            statusFilter = state.statusFilter
+                    )
+                }
+            }
     val allGroups: List<String?> = listOf(null) + state.groups
     val swipeModifier =
             if (allGroups.size > 1) {
@@ -291,7 +303,7 @@ private fun NodeListContent(
                 }
             }
 
-            if (state.filteredNodes.isEmpty()) {
+            if (filteredNodes.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyNodeList(
                             hasSearchQuery = state.searchQuery.isNotBlank(),
@@ -301,13 +313,13 @@ private fun NodeListContent(
                     )
                 }
             } else {
-                items(state.filteredNodes, key = { it.uuid }) { node ->
+                items(filteredNodes, key = { it.uuid }) { node ->
+                    val onNodeClick = remember(node.uuid, onEvent) {
+                        { onEvent(NodeListContract.Event.NodeClicked(node.uuid)) }
+                    }
                     NodeCard(
                             node = node,
-                            onClick =
-                                    soundClick {
-                                        onEvent(NodeListContract.Event.NodeClicked(node.uuid))
-                                    },
+                            onClick = onNodeClick,
                             isExpanded = isAllExpanded
                     )
                 }
@@ -317,5 +329,32 @@ private fun NodeListContent(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+}
+
+private fun filterNodes(
+        nodes: List<com.sekusarisu.yanami.domain.model.Node>,
+        searchQuery: String,
+        selectedGroup: String?,
+        statusFilter: NodeListContract.StatusFilter
+): List<com.sekusarisu.yanami.domain.model.Node> {
+    val trimmedQuery = searchQuery.trim()
+    return nodes.filter { node ->
+        val matchesSearch =
+                trimmedQuery.isBlank() ||
+                        node.name.contains(trimmedQuery, ignoreCase = true) ||
+                        node.region.contains(trimmedQuery, ignoreCase = true) ||
+                        node.os.contains(trimmedQuery, ignoreCase = true) ||
+                        node.cpuName.contains(trimmedQuery, ignoreCase = true)
+
+        val matchesGroup = selectedGroup == null || node.group == selectedGroup
+        val matchesStatus =
+                when (statusFilter) {
+                    NodeListContract.StatusFilter.ALL -> true
+                    NodeListContract.StatusFilter.ONLINE -> node.isOnline
+                    NodeListContract.StatusFilter.OFFLINE -> !node.isOnline
+                }
+
+        matchesSearch && matchesGroup && matchesStatus
     }
 }

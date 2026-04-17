@@ -15,7 +15,6 @@ object NodeListContract {
             val isLoading: Boolean = true,
             val isRefreshing: Boolean = false,
             val nodes: List<Node> = emptyList(),
-            val filteredNodes: List<Node> = emptyList(),
             val searchQuery: String = "",
             val groups: List<String> = emptyList(),
             val selectedGroup: String? = null, // null = 全部

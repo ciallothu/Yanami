@@ -154,7 +154,6 @@ private fun nodeListTabletPreviewState(): NodeListContract.State {
             isLoading = false,
             isRefreshing = false,
             nodes = nodes,
-            filteredNodes = nodes,
             searchQuery = "",
             groups = listOf("Asia", "Europe", "America"),
             selectedGroup = null,

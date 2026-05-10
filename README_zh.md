@@ -20,7 +20,7 @@
 - **节点详情看板** — 负载历史折线图、Ping 延迟趋势、服务器基础信息
 - **SSH 终端** — 基于 Terminal-view + WebSocket 的全功能 ANSI/VT100 终端，支持特殊按键工具栏与字号调整
 - **桌面小部件** — 基于 Glance 的节点总览桌面小部件，支持刷新和更新间隔配置
-- **iPhone App 预览版** — 原生 SwiftUI iPhone 应用，支持密码 / API Key / 游客模式、自定义 HTTP Header、连接测试和节点列表加载
+- **iPhone App 预览版** — 原生 SwiftUI iPhone 应用，支持多实例、密码 / API Key / 游客模式、自定义 HTTP Header、自动刷新的节点列表、节点详情、负载与 Ping 记录
 - **平板横屏适配** — 提供 NavigationRail、大屏多列列表和详情双栏布局
 - **多语言** — 中文（默认）、English、日本語
 - **主题系统** — Material You 动态取色（Android 12+）+ 6 种预设配色，支持深色/浅色/跟随系统
@@ -102,7 +102,9 @@
 # 未签名 iPhone IPA
 BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_NUMBER=${GITHUB_RUN_NUMBER:-1}
-VERSION="${BASE_VERSION}-${BUILD_NUMBER}"
+SHORT_SHA=${GITHUB_SHA:-local}
+SHORT_SHA=${SHORT_SHA:0:7}
+VERSION="${BASE_VERSION}-${SHORT_SHA}"
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
@@ -123,7 +125,7 @@ ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload
 (cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
 ```
 
-Android 构建产物位于 `app/build/outputs/apk/`。未签名 iPhone IPA 位于 `build/Yanami-v<基础版本>-<构建编号>.ipa`，安装到真机前需要使用者自行签名。
+Android 构建产物位于 `app/build/outputs/apk/`。未签名 iPhone IPA 位于 `build/Yanami-v<基础版本>-<短提交号>.ipa`，安装到真机前需要使用者自行签名。
 
 ## 技术栈
 
@@ -154,7 +156,7 @@ Data Layer    Repository 实现、Ktor、Room、DataStore
 
 每个页面遵循 **Contract 模式**，以嵌套的 `State` / `Event` / `Effect` 描述该页面的完整 MVI 契约。
 
-iPhone 端位于 `ios/`，是原生 SwiftUI 工程。首个版本聚焦连接普通 Komari 实例或 Cloudflare Access 保护的实例，凭据存入 Keychain，并加载实时节点列表。
+iPhone 端位于 `ios/`，是原生 SwiftUI 工程。源码拆分为 `Models`、`Services`、`Stores`、`Views`、`Utilities` 和 `Resources`，对应 Android 的领域/数据/UI 分层，同时使用原生 iOS API。
 
 ### 导航流
 

@@ -23,7 +23,7 @@ English | [简体中文](README_zh.md)
 - **Node Detail Dashboard** — Load history line charts, Ping latency trends, basic server information.
 - **SSH Terminal** — Full-featured ANSI/VT100 terminal based on termux terminal-view + WebSocket, supporting special key toolbars and font size adjustment.
 - **Home Screen Widget** — Glance widget for node overview, refresh, and update interval configuration.
-- **iPhone App Preview** — Native SwiftUI iPhone app with password / API Key / guest mode, custom HTTP headers, connection testing, and node list loading.
+- **iPhone App Preview** — Native SwiftUI iPhone app with multi-instance management, password / API Key / guest mode, custom HTTP headers, auto-refreshing node list, node detail, load and ping records.
 - **Tablet Landscape Layout** — Adaptive large-screen layout with NavigationRail, multi-column lists, and split detail panels.
 - **Multi-Language Support** — Chinese (Default), English, Japanese.
 - **Theme System** — Material You dynamic colors (Android 12+) + 6 preset color palettes, supporting dark/light mode and system-following mode.
@@ -105,7 +105,9 @@ English | [简体中文](README_zh.md)
 # Unsigned iPhone IPA
 BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_NUMBER=${GITHUB_RUN_NUMBER:-1}
-VERSION="${BASE_VERSION}-${BUILD_NUMBER}"
+SHORT_SHA=${GITHUB_SHA:-local}
+SHORT_SHA=${SHORT_SHA:0:7}
+VERSION="${BASE_VERSION}-${SHORT_SHA}"
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
@@ -126,7 +128,7 @@ ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload
 (cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
 ```
 
-Android build outputs are located at `app/build/outputs/apk/`. The unsigned iPhone IPA is generated at `build/Yanami-v<base-version>-<build-number>.ipa` and must be signed by the installer before device installation.
+Android build outputs are located at `app/build/outputs/apk/`. The unsigned iPhone IPA is generated at `build/Yanami-v<base-version>-<short-sha>.ipa` and must be signed by the installer before device installation.
 
 ## Tech Stack
 
@@ -157,7 +159,7 @@ Data Layer    Repository Implementation, Ktor, Room, DataStore
 
 Each page follows the **Contract Pattern**, describing the complete MVI contract of the page with nested `State` / `Event` / `Effect`.
 
-The iPhone app lives under `ios/` as a native SwiftUI project. Its first release focuses on connecting to Komari instances behind normal or Cloudflare Access-protected endpoints, storing credentials in Keychain, and loading the live node list.
+The iPhone app lives under `ios/` as a native SwiftUI project. Its source is split into `Models`, `Services`, `Stores`, `Views`, `Utilities`, and `Resources`, matching the Android domain/data/UI separation while using native iOS APIs.
 
 ### Navigation Flow
 

@@ -102,18 +102,27 @@ English | [简体中文](README_zh.md)
 # Clean and build Android debug APK
 ./gradlew clean assembleDebug
 
-# iPhone simulator app
+# Unsigned iPhone IPA
+VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
-  -configuration Debug \
-  -sdk iphonesimulator \
+  -configuration Release \
+  -sdk iphoneos \
+  -destination 'generic/platform=iOS' \
   -derivedDataPath build/ios \
   CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="" \
+  PROVISIONING_PROFILE_SPECIFIER="" \
   build
+mkdir -p build/ios-ipa/Payload
+ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/Yanami.app
+(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
 ```
 
-Android build outputs are located at `app/build/outputs/apk/`. The iPhone simulator app is generated at `build/ios/Build/Products/Debug-iphonesimulator/Yanami.app`.
+Android build outputs are located at `app/build/outputs/apk/`. The unsigned iPhone IPA is generated at `build/Yanami-v<version>.ipa` and must be signed by the installer before device installation.
 
 ## Tech Stack
 

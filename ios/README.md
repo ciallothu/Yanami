@@ -13,16 +13,25 @@ Native SwiftUI iPhone app for Yanami.
 ## Build
 
 ```bash
+VERSION=$(grep 'versionName' ../app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 xcodebuild \
   -project Yanami.xcodeproj \
   -scheme Yanami \
-  -configuration Debug \
-  -sdk iphonesimulator \
+  -configuration Release \
+  -sdk iphoneos \
+  -destination 'generic/platform=iOS' \
   -derivedDataPath ../build/ios \
   CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="" \
+  PROVISIONING_PROFILE_SPECIFIER="" \
   build
+mkdir -p ../build/ios-ipa/Payload
+ditto ../build/ios/Build/Products/Release-iphoneos/Yanami.app ../build/ios-ipa/Payload/Yanami.app
+(cd ../build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
 ```
 
-The debug simulator app is generated at `../build/ios/Build/Products/Debug-iphonesimulator/Yanami.app`.
+The unsigned IPA is generated at `../build/Yanami-v<version>.ipa`.
 
-Signed iPhone device builds require Apple signing credentials and a provisioning profile in CI.
+The IPA must be signed before device installation.

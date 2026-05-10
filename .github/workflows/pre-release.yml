@@ -78,29 +78,37 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build iPhone simulator app
+      - name: Build unsigned iPhone device app
         run: |
           xcodebuild \
             -project ios/Yanami.xcodeproj \
             -scheme Yanami \
-            -configuration Debug \
-            -sdk iphonesimulator \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build/ios \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
             build
 
-      - name: Package iPhone simulator app
+      - name: Package unsigned iPhone IPA
         run: |
+          VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           mkdir -p prerelease/iphone
-          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/Yanami.app"
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Yanami.app"
           test -d "$APP_PATH"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" prerelease/iphone/Yanami-iPhone-simulator.zip
+          mkdir -p prerelease/iphone/Payload
+          ditto "$APP_PATH" prerelease/iphone/Payload/Yanami.app
+          (cd prerelease/iphone && ditto -c -k --sequesterRsrc --keepParent Payload "Yanami-v${VERSION}.ipa")
 
-      - name: Upload iPhone app
+      - name: Upload iPhone IPA
         uses: actions/upload-artifact@v4
         with:
-          name: yanami-iphone-app
-          path: prerelease/iphone/*.zip
+          name: yanami-iphone-ipa
+          path: prerelease/iphone/*.ipa
           if-no-files-found: error
 
   pre-release:
@@ -123,10 +131,10 @@ jobs:
           name: yanami-debug-apks
           path: prerelease/raw/android
 
-      - name: Download iPhone app
+      - name: Download iPhone IPA
         uses: actions/download-artifact@v4
         with:
-          name: yanami-iphone-app
+          name: yanami-iphone-ipa
           path: prerelease/raw/iphone
 
       - name: Prepare release assets
@@ -150,8 +158,8 @@ jobs:
             cp "$apk" "prerelease/assets/$target"
           done
 
-          for iphone_app in prerelease/raw/iphone/*.zip; do
-            cp "$iphone_app" "prerelease/assets/Yanami-v${VERSION}-pre-release-iphone-simulator.zip"
+          for ipa in prerelease/raw/iphone/*.ipa; do
+            cp "$ipa" "prerelease/assets/Yanami-v${VERSION}.ipa"
           done
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -175,7 +183,7 @@ jobs:
             This build passed:
             - `testDebugUnitTest`
             - `assembleDebug`
-            - `xcodebuild` for the iPhone simulator app
+            - `xcodebuild` for the unsigned iPhone device IPA
 
             `lintDebug` is uploaded as a non-blocking report artifact.
           prerelease: true

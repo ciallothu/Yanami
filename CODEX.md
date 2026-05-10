@@ -31,8 +31,8 @@ Yanami supports Android & iPhone for the **Komari** server monitoring tool. The 
 # Clean build
 ./gradlew clean assembleDebug
 
-# Build iPhone simulator app
-xcodebuild -project ios/Yanami.xcodeproj -scheme Yanami -configuration Debug -sdk iphonesimulator -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO build
+# Build unsigned iPhone device app for IPA packaging
+xcodebuild -project ios/Yanami.xcodeproj -scheme Yanami -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER="" build
 ```
 
 ## Architecture

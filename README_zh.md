@@ -99,18 +99,27 @@
 # 清理后构建 Android Debug APK
 ./gradlew clean assembleDebug
 
-# iPhone 模拟器应用
+# 未签名 iPhone IPA
+VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
-  -configuration Debug \
-  -sdk iphonesimulator \
+  -configuration Release \
+  -sdk iphoneos \
+  -destination 'generic/platform=iOS' \
   -derivedDataPath build/ios \
   CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="" \
+  PROVISIONING_PROFILE_SPECIFIER="" \
   build
+mkdir -p build/ios-ipa/Payload
+ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/Yanami.app
+(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
 ```
 
-Android 构建产物位于 `app/build/outputs/apk/`。iPhone 模拟器应用位于 `build/ios/Build/Products/Debug-iphonesimulator/Yanami.app`。
+Android 构建产物位于 `app/build/outputs/apk/`。未签名 iPhone IPA 位于 `build/Yanami-v<version>.ipa`，安装到真机前需要使用者自行签名。
 
 ## 技术栈
 

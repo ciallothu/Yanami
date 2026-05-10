@@ -100,13 +100,15 @@ struct KomariClient {
     }
 
     func getRecentStatus(token: String, uuid: String) async throws -> [LoadRecord] {
-        let request = try makeRequest(path: "/api/recent/\(uuid)", method: "GET", token: token)
+        let encodedUuid = uuid.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? uuid
+        let request = try makeRequest(path: "/api/recent/\(encodedUuid)", method: "GET", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw KomariClientError.invalidResponse
         }
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw KomariClientError.httpStatus(httpResponse.statusCode)
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw KomariClientError.httpStatus(httpResponse.statusCode, path: "/api/recent/\(encodedUuid)", body: body)
         }
         let payload = try Self.decoder.decode(RecentStatusResponse.self, from: data)
         return payload.data.map { $0.toDomain() }
@@ -223,7 +225,8 @@ struct KomariClient {
             throw KomariClientError.invalidResponse
         }
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw KomariClientError.httpStatus(httpResponse.statusCode)
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw KomariClientError.httpStatus(httpResponse.statusCode, path: "/api/rpc2 (\(method))", body: body)
         }
         let envelope = try Self.decoder.decode(RpcEnvelope<T>.self, from: data)
         if let error = envelope.error {
@@ -247,6 +250,8 @@ struct KomariClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("YanamiNext-iPhone/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
         profile.sanitizedCustomHeaders.forEach { header in
             request.setValue(header.value, forHTTPHeaderField: header.name)
         }
@@ -254,7 +259,10 @@ struct KomariClient {
         if let token, !token.isEmpty {
             switch profile.authType {
             case .password:
-                request.setValue("session_token=\(token)", forHTTPHeaderField: "Cookie")
+                let existingCookie = request.value(forHTTPHeaderField: "Cookie") ?? ""
+                let sessionCookie = "session_token=\(token)"
+                let fullCookie = existingCookie.isEmpty ? sessionCookie : "\(existingCookie); \(sessionCookie)"
+                request.setValue(fullCookie, forHTTPHeaderField: "Cookie")
             case .apiKey:
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             case .guest:
@@ -296,7 +304,7 @@ struct KomariClient {
 enum KomariClientError: LocalizedError {
     case invalidConfiguration(String)
     case invalidResponse
-    case httpStatus(Int)
+    case httpStatus(Int, path: String, body: String)
     case rpc(String)
     case requires2FA
 
@@ -306,8 +314,8 @@ enum KomariClientError: LocalizedError {
             return message
         case .invalidResponse:
             return "Invalid server response"
-        case .httpStatus(let status):
-            return "HTTP \(status)"
+        case .httpStatus(let status, let path, let body):
+            return "HTTP \(status) at \(path): \(body)"
         case .rpc(let message):
             return message
         case .requires2FA:

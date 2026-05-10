@@ -8,11 +8,21 @@ struct NodeDetailView: View {
         List {
             if store.nodeDetail.isLoading && store.nodeDetail.node == nil {
                 ProgressView("Loading detail")
-            } else if let error = store.nodeDetail.error {
-                EmptyStateView(title: "Load Failed", systemImage: "exclamationmark.triangle", message: error)
             } else if let node = store.nodeDetail.node {
                 Section {
                     NodeHeaderView(node: node)
+                }
+
+                if let error = store.nodeDetail.error {
+                    Section {
+                        Label {
+                            Text(error)
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                        }
+                        .font(.caption)
+                    }
                 }
 
                 Section("Live Resources") {
@@ -86,6 +96,8 @@ struct NodeDetailView: View {
                         TerminalPreviewView(node: node)
                     }
                 }
+            } else if let error = store.nodeDetail.error {
+                EmptyStateView(title: "Load Failed", systemImage: "exclamationmark.triangle", message: error)
             }
         }
         .navigationTitle(store.nodeDetail.node?.name ?? "Node Detail")

@@ -209,15 +209,27 @@ final class AppStore: ObservableObject {
                 nodes = try await client.getNodes(token: token)
             }
             nodeDetail.node = nodes.first { $0.uuid == uuid }
-            if nodeDetail.loadHours == 0 {
-                nodeDetail.loadRecords = try await client.getRecentStatus(token: token, uuid: uuid)
-            } else {
-                nodeDetail.loadRecords = try await client.getLoadRecords(token: token, uuid: uuid, hours: nodeDetail.loadHours)
-            }
-            let ping = try await client.getPingRecords(token: token, uuid: uuid, hours: nodeDetail.pingHours)
-            nodeDetail.pingTasks = ping.0
-            nodeDetail.pingRecords = ping.1
             nodeDetail.isLoading = false
+
+            // Load records independently
+            do {
+                if nodeDetail.loadHours == 0 {
+                    nodeDetail.loadRecords = try await client.getRecentStatus(token: token, uuid: uuid)
+                } else {
+                    nodeDetail.loadRecords = try await client.getLoadRecords(token: token, uuid: uuid, hours: nodeDetail.loadHours)
+                }
+            } catch {
+                nodeDetail.error = "Load records: \(error.localizedDescription)"
+            }
+
+            do {
+                let ping = try await client.getPingRecords(token: token, uuid: uuid, hours: nodeDetail.pingHours)
+                nodeDetail.pingTasks = ping.0
+                nodeDetail.pingRecords = ping.1
+            } catch {
+                let current = nodeDetail.error ?? ""
+                nodeDetail.error = current.isEmpty ? "Ping records: \(error.localizedDescription)" : "\(current)\nPing records: \(error.localizedDescription)"
+            }
         } catch {
             nodeDetail.isLoading = false
             nodeDetail.error = error.localizedDescription

@@ -4,11 +4,11 @@ This file provides guidance to Codex when working with code in this repository.
 
 ## Project Overview
 
-Yanami is a Material Design 3 Android client for the **Komari** server monitoring tool. It provides real-time WebSocket updates, multi-instance management, and server status visualization.
+Yanami supports Android & iPhone for the **Komari** server monitoring tool. The Android app uses Material Design 3, and the iPhone app uses SwiftUI.
 
 - **Package:** `com.sekusarisu.yanami`
-- **Language:** Kotlin | **Min SDK:** 28 | **Target/Compile SDK:** 36
-- **UI:** Jetpack Compose with Material 3
+- **Android:** Kotlin | **Min SDK:** 28 | **Target/Compile SDK:** 36 | Jetpack Compose with Material 3
+- **iPhone:** Swift 5 | iOS 16+ | SwiftUI
 
 ## Build Commands
 
@@ -30,11 +30,14 @@ Yanami is a Material Design 3 Android client for the **Komari** server monitorin
 
 # Clean build
 ./gradlew clean assembleDebug
+
+# Build iPhone simulator app
+xcodebuild -project ios/Yanami.xcodeproj -scheme Yanami -configuration Debug -sdk iphonesimulator -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO build
 ```
 
 ## Architecture
 
-**MVI (Model-View-Intent)** pattern with three layers:
+The Android app uses an **MVI (Model-View-Intent)** pattern with three layers:
 
 - **UI Layer:** Voyager `Screen` + Compose UI + `MviViewModel<State, Event, Effect>`
 - **Domain Layer:** Repository interfaces + domain models (`Node`, `ServerInstance`, etc.)
@@ -76,6 +79,8 @@ ServerListScreen → AddServerScreen → NodeListScreen → NodeDetailScreen
 ### DI Setup
 
 All dependencies registered in `di/AppModule.kt` via Koin. App initialized in `YanamiApplication.kt`.
+
+The iPhone app lives in `ios/` as a native SwiftUI project. It supports Komari password / API Key / guest auth, custom HTTP headers for Cloudflare Access service tokens, Keychain persistence, connection testing, and node list loading.
 
 ## Internationalization
 

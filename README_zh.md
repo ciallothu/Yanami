@@ -6,9 +6,9 @@
     <img alt="banner" src="assets/banner.png">
 </p>
 
-**Yanami** 是 [Komari](https://github.com/komari-monitor/komari) 服务器监控工具的 Android 客户端，采用 Material Design 3 设计语言构建。
+**Yanami** 支持 Android & iPhone，用于连接 [Komari](https://github.com/komari-monitor/komari) 服务器监控工具。Android 端采用 Material Design 3，iPhone 端采用 SwiftUI。
 
-> A Material Design 3 Android client for the Komari server monitoring tool.
+> A Komari client that supports Android & iPhone.
 
 ---
 
@@ -20,6 +20,7 @@
 - **节点详情看板** — 负载历史折线图、Ping 延迟趋势、服务器基础信息
 - **SSH 终端** — 基于 Terminal-view + WebSocket 的全功能 ANSI/VT100 终端，支持特殊按键工具栏与字号调整
 - **桌面小部件** — 基于 Glance 的节点总览桌面小部件，支持刷新和更新间隔配置
+- **iPhone App 预览版** — 原生 SwiftUI iPhone 应用，支持密码 / API Key / 游客模式、自定义 HTTP Header、连接测试和节点列表加载
 - **平板横屏适配** — 提供 NavigationRail、大屏多列列表和详情双栏布局
 - **多语言** — 中文（默认）、English、日本語
 - **主题系统** — Material You 动态取色（Android 12+）+ 6 种预设配色，支持深色/浅色/跟随系统
@@ -83,30 +84,43 @@
 | 项目 | 要求 |
 |---|---|
 | Android | 9.0（API 28）及以上 |
+| iPhone | iOS 16 及以上 |
 | 服务端 | Komari 1.1.7 及以上 |
 
 ## 构建
 
 ```bash
-# Debug APK
+# Android Debug APK
 ./gradlew assembleDebug
 
-# Release APK
+# Android Release APK
 ./gradlew assembleRelease
 
-# 清理后构建
+# 清理后构建 Android Debug APK
 ./gradlew clean assembleDebug
+
+# iPhone 模拟器应用
+xcodebuild \
+  -project ios/Yanami.xcodeproj \
+  -scheme Yanami \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -derivedDataPath build/ios \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
-构建产物位于 `app/build/outputs/apk/`。
+Android 构建产物位于 `app/build/outputs/apk/`。iPhone 模拟器应用位于 `build/ios/Build/Products/Debug-iphonesimulator/Yanami.app`。
 
 ## 技术栈
 
 | 库 | 版本 | 用途 |
 |---|---|---|
-| Kotlin | 2.3.10 | 主语言 |
-| Jetpack Compose BOM | 2026.02.01 | UI 框架 |
-| MD3 | — | 设计系统 |
+| Kotlin | 2.3.10 | Android 主语言 |
+| Swift | 5 | iPhone 主语言 |
+| Jetpack Compose BOM | 2026.02.01 | Android UI 框架 |
+| SwiftUI | iOS 16+ | iPhone UI 框架 |
+| MD3 | — | Android 设计系统 |
 | Voyager | 1.1.0-beta03 | 导航 + ScreenModel |
 | Koin | 4.1.1 | 依赖注入 |
 | Ktor | 3.4.1 | HTTP 客户端 + WebSocket |
@@ -117,7 +131,7 @@
 
 ## 架构
 
-采用 **MVI（Model-View-Intent）** 模式，并在根层加入自适配导航壳层：
+Android 端采用 **MVI（Model-View-Intent）** 模式，并在根层加入自适配导航壳层：
 
 ```
 UI Layer      MainActivity Root Shell + Voyager Screen + Compose UI + MviViewModel<State, Event, Effect>
@@ -126,6 +140,8 @@ Data Layer    Repository 实现、Ktor、Room、DataStore
 ```
 
 每个页面遵循 **Contract 模式**，以嵌套的 `State` / `Event` / `Effect` 描述该页面的完整 MVI 契约。
+
+iPhone 端位于 `ios/`，是原生 SwiftUI 工程。首个版本聚焦连接普通 Komari 实例或 Cloudflare Access 保护的实例，凭据存入 Keychain，并加载实时节点列表。
 
 ### 导航流
 

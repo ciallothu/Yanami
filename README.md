@@ -9,9 +9,9 @@ English | [简体中文](README_zh.md)
     <img alt="banner" src="assets/banner.png">
 </p>
 
-**Yanami** is an Android client for the [Komari](https://github.com/komari-monitor/komari) server monitoring tool, built with the Material Design 3 design language.
+**Yanami** supports Android & iPhone for the [Komari](https://github.com/komari-monitor/komari) server monitoring tool. The Android app is built with Material Design 3, and the iPhone app is built with SwiftUI.
 
-> A Material Design 3 Android client for the Komari server monitoring tool.
+> A Komari client that supports Android & iPhone.
 
 ---
 
@@ -23,6 +23,7 @@ English | [简体中文](README_zh.md)
 - **Node Detail Dashboard** — Load history line charts, Ping latency trends, basic server information.
 - **SSH Terminal** — Full-featured ANSI/VT100 terminal based on termux terminal-view + WebSocket, supporting special key toolbars and font size adjustment.
 - **Home Screen Widget** — Glance widget for node overview, refresh, and update interval configuration.
+- **iPhone App Preview** — Native SwiftUI iPhone app with password / API Key / guest mode, custom HTTP headers, connection testing, and node list loading.
 - **Tablet Landscape Layout** — Adaptive large-screen layout with NavigationRail, multi-column lists, and split detail panels.
 - **Multi-Language Support** — Chinese (Default), English, Japanese.
 - **Theme System** — Material You dynamic colors (Android 12+) + 6 preset color palettes, supporting dark/light mode and system-following mode.
@@ -86,30 +87,43 @@ English | [简体中文](README_zh.md)
 | Item | Requirement |
 |---|---|
 | Android | 9.0 (API 28) and above |
+| iPhone | iOS 16 and above |
 | Server | Komari 1.1.7 or above |
 
 ## Build
 
 ```bash
-# Debug APK
+# Android debug APK
 ./gradlew assembleDebug
 
-# Release APK
+# Android release APK
 ./gradlew assembleRelease
 
-# Clean and Build
+# Clean and build Android debug APK
 ./gradlew clean assembleDebug
+
+# iPhone simulator app
+xcodebuild \
+  -project ios/Yanami.xcodeproj \
+  -scheme Yanami \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -derivedDataPath build/ios \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
-Build outputs are located at `app/build/outputs/apk/`.
+Android build outputs are located at `app/build/outputs/apk/`. The iPhone simulator app is generated at `build/ios/Build/Products/Debug-iphonesimulator/Yanami.app`.
 
 ## Tech Stack
 
 | Library | Version | Purpose |
 |---|---|---|
-| Kotlin | 2.3.10 | Main language |
-| Jetpack Compose BOM | 2026.02.01 | UI Framework |
-| MD3 | — | Design System |
+| Kotlin | 2.3.10 | Android main language |
+| Swift | 5 | iPhone main language |
+| Jetpack Compose BOM | 2026.02.01 | Android UI framework |
+| SwiftUI | iOS 16+ | iPhone UI framework |
+| MD3 | — | Android design system |
 | Voyager | 1.1.0-beta03 | Navigation + ScreenModel |
 | Koin | 4.1.1 | Dependency Injection |
 | Ktor | 3.4.1 | HTTP Client + WebSocket |
@@ -120,7 +134,7 @@ Build outputs are located at `app/build/outputs/apk/`.
 
 ## Architecture
 
-Adopts the **MVI (Model-View-Intent)** pattern with an adaptive root shell:
+The Android app adopts the **MVI (Model-View-Intent)** pattern with an adaptive root shell:
 
 ```
 UI Layer      MainActivity Root Shell + Voyager Screen + Compose UI + MviViewModel<State, Event, Effect>
@@ -129,6 +143,8 @@ Data Layer    Repository Implementation, Ktor, Room, DataStore
 ```
 
 Each page follows the **Contract Pattern**, describing the complete MVI contract of the page with nested `State` / `Event` / `Effect`.
+
+The iPhone app lives under `ios/` as a native SwiftUI project. Its first release focuses on connecting to Komari instances behind normal or Cloudflare Access-protected endpoints, storing credentials in Keychain, and loading the live node list.
 
 ### Navigation Flow
 

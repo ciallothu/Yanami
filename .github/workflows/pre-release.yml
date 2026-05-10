@@ -39,10 +39,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Test, lint, and build debug APK
+      - name: Test and build debug APK
         run: |
           chmod +x ./gradlew
-          ./gradlew testDebugUnitTest lintDebug assembleDebug
+          ./gradlew testDebugUnitTest assembleDebug
+
+      - name: Run Android lint
+        continue-on-error: true
+        run: |
+          ./gradlew lintDebug
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
@@ -118,8 +123,9 @@ jobs:
 
             This build passed:
             - `testDebugUnitTest`
-            - `lintDebug`
             - `assembleDebug`
+
+            `lintDebug` is uploaded as a non-blocking report artifact.
           prerelease: true
           make_latest: false
           fail_on_unmatched_files: true

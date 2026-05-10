@@ -130,7 +130,7 @@ private struct NodeRowView: View {
                 StatusPill(isOnline: node.isOnline)
             }
 
-            ResourceMeter(title: "CPU", value: node.cpuUsage / 100, label: "\(node.cpuUsage, specifier: "%.1f")%")
+            ResourceMeter(title: "CPU", value: node.cpuUsage / 100, label: Formatters.percent(node.cpuUsage))
 
             HStack {
                 Text("RAM \(Formatters.bytes(node.memUsed)) / \(Formatters.bytes(node.memTotal))")

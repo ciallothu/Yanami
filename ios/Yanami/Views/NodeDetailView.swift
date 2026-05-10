@@ -16,7 +16,7 @@ struct NodeDetailView: View {
                 }
 
                 Section("Live Resources") {
-                    ResourceMeter(title: "CPU", value: node.cpuUsage / 100, label: "\(node.cpuUsage, specifier: "%.1f")%")
+                    ResourceMeter(title: "CPU", value: node.cpuUsage / 100, label: Formatters.percent(node.cpuUsage))
                     ResourceMeter(
                         title: "RAM",
                         value: node.memTotal > 0 ? Double(node.memUsed) / Double(node.memTotal) : 0,
@@ -44,7 +44,7 @@ struct NodeDetailView: View {
                     DetailLine("Arch", node.arch)
                     DetailLine("GPU", node.gpuName)
                     DetailLine("Uptime", Formatters.uptime(node.uptime))
-                    DetailLine("Load", "\(node.load1, specifier: "%.2f") / \(node.load5, specifier: "%.2f") / \(node.load15, specifier: "%.2f")")
+                    DetailLine("Load", "\(Formatters.number(node.load1, digits: 2)) / \(Formatters.number(node.load5, digits: 2)) / \(Formatters.number(node.load15, digits: 2))")
                     DetailLine("Connections", "TCP \(node.connectionsTcp), UDP \(node.connectionsUdp)")
                     if let expiredAt = node.expiredAt, !expiredAt.isEmpty {
                         DetailLine("Expires", expiredAt)
@@ -132,9 +132,9 @@ private struct RecordsSummaryView: View {
             let last = records.last
             VStack(alignment: .leading, spacing: 8) {
                 DetailLine("Samples", "\(records.count)")
-                DetailLine("Latest CPU", "\(last?.cpu ?? 0, specifier: "%.1f")%")
-                DetailLine("Latest RAM", "\(last?.ramPercent ?? 0, specifier: "%.1f")%")
-                DetailLine("Latest Disk", "\(last?.diskPercent ?? 0, specifier: "%.1f")%")
+                DetailLine("Latest CPU", Formatters.percent(last?.cpu ?? 0))
+                DetailLine("Latest RAM", Formatters.percent(last?.ramPercent ?? 0))
+                DetailLine("Latest Disk", Formatters.percent(last?.diskPercent ?? 0))
             }
         }
     }
@@ -153,7 +153,7 @@ private struct PingSummaryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(task.name)
                         .font(.headline)
-                    Text("Latest \(task.latest, specifier: "%.1f") ms, avg \(task.avg, specifier: "%.1f") ms, loss \(task.loss, specifier: "%.1f")%")
+                    Text("Latest \(Formatters.number(task.latest)) ms, avg \(Formatters.number(task.avg)) ms, loss \(Formatters.percent(task.loss))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

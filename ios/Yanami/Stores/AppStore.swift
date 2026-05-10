@@ -131,14 +131,13 @@ final class AppStore: ObservableObject {
     }
 
     func testConnection(_ server: ServerProfile) async throws -> String {
-        var candidate = server
-        let client = KomariClient(profile: candidate)
-        let token = try await resolveToken(for: candidate, client: client)
+        let client = KomariClient(profile: server)
+        let token = try await resolveToken(for: server, client: client)
         return try await client.getVersion(token: token)
     }
 
     func loadNodes(mode: NodeLoadMode = .refresh) async {
-        guard var server = activeServer else {
+        guard let server = activeServer else {
             statusMessage = "Add or select a Komari instance first"
             return
         }
@@ -248,7 +247,7 @@ final class AppStore: ObservableObject {
         guard settings.autoRefreshEnabled else { return }
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                let interval = await self?.settings.refreshIntervalSeconds ?? 2
+                let interval = self?.settings.refreshIntervalSeconds ?? 2
                 try? await Task.sleep(nanoseconds: UInt64(max(interval, 1) * 1_000_000_000))
                 await self?.refreshStatusesOnly()
             }

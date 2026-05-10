@@ -1,6 +1,14 @@
 import Foundation
 
 enum Formatters {
+    static func number(_ value: Double, digits: Int = 1) -> String {
+        String(format: "%.\(digits)f", value)
+    }
+
+    static func percent(_ value: Double, digits: Int = 1) -> String {
+        "\(number(value, digits: digits))%"
+    }
+
     static func bytes(_ value: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: value, countStyle: .binary)
     }

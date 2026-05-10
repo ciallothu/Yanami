@@ -18,8 +18,16 @@ val MIGRATION_2_3 =
             }
         }
 
-/** Yanami Room 数据库 — v3：添加 API Key 认证模式 */
-@Database(entities = [ServerInstanceEntity::class], version = 3, exportSchema = false)
+/** v3→v4 迁移：添加自定义请求头支持 */
+val MIGRATION_3_4 =
+        object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE server_instances ADD COLUMN encrypted_custom_headers TEXT")
+            }
+        }
+
+/** Yanami Room 数据库 — v4：添加自定义请求头支持 */
+@Database(entities = [ServerInstanceEntity::class], version = 4, exportSchema = false)
 abstract class YanamiDatabase : RoomDatabase() {
     abstract fun serverInstanceDao(): ServerInstanceDao
 }

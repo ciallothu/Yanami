@@ -291,6 +291,7 @@ class SshTerminalViewModel(
                                 endpoint = endpoint,
                                 sessionToken = sessionToken,
                                 authType = authType,
+                                customHeaders = server.customHeaders,
                                 loggerTag = TAG,
                                 block = wsBlock
                         )

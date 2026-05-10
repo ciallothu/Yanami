@@ -3,6 +3,7 @@ package com.sekusarisu.yanami.data.remote
 import android.util.Log
 import com.sekusarisu.yanami.BuildConfig
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -44,7 +45,8 @@ class KomariAuthService(private val httpClient: HttpClient) {
             baseUrl: String,
             username: String,
             password: String,
-            twoFaCode: String? = null
+            twoFaCode: String? = null,
+            customHeaders: List<CustomHeader> = emptyList()
     ): LoginResult {
         val url = baseUrl.trimEnd('/') + "/api/login"
 
@@ -60,6 +62,8 @@ class KomariAuthService(private val httpClient: HttpClient) {
             val response =
                     httpClient.post(url) {
                         contentType(ContentType.Application.Json)
+                        skipSessionInterceptor()
+                        applyCustomHeaders(customHeaders)
                         header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
                         setBody(requestBody.toString())
                     }
@@ -98,7 +102,11 @@ class KomariAuthService(private val httpClient: HttpClient) {
      * 通过 HTTP POST RPC2 调用 common:getVersion，使用 Bearer 认证头
      * @return true = API Key 有效
      */
-    suspend fun validateApiKey(baseUrl: String, apiKey: String): Boolean {
+    suspend fun validateApiKey(
+            baseUrl: String,
+            apiKey: String,
+            customHeaders: List<CustomHeader> = emptyList()
+    ): Boolean {
         return try {
             val url = baseUrl.trimEnd('/') + "/api/rpc2"
             val rpcRequest = buildJsonObject {
@@ -110,6 +118,8 @@ class KomariAuthService(private val httpClient: HttpClient) {
             val response =
                     httpClient.post(url) {
                         contentType(ContentType.Application.Json)
+                        skipSessionInterceptor()
+                        applyCustomHeaders(customHeaders)
                         applyAuth(apiKey, AuthType.API_KEY)
                         header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
                         setBody(rpcRequest.toString())
@@ -134,7 +144,11 @@ class KomariAuthService(private val httpClient: HttpClient) {
      *
      * 通过 HTTP POST RPC2 调用 common:getMe，检查返回的 logged_in 是否为 true
      */
-    suspend fun validateSession(baseUrl: String, sessionToken: String): Boolean {
+    suspend fun validateSession(
+            baseUrl: String,
+            sessionToken: String,
+            customHeaders: List<CustomHeader> = emptyList()
+    ): Boolean {
         return try {
             val url = baseUrl.trimEnd('/') + "/api/rpc2"
             val rpcRequest = buildJsonObject {
@@ -146,6 +160,8 @@ class KomariAuthService(private val httpClient: HttpClient) {
             val response =
                     httpClient.post(url) {
                         contentType(ContentType.Application.Json)
+                        skipSessionInterceptor()
+                        applyCustomHeaders(customHeaders)
                         applyAuth(sessionToken, AuthType.PASSWORD)
                         setBody(rpcRequest.toString())
                     }
@@ -172,10 +188,18 @@ class KomariAuthService(private val httpClient: HttpClient) {
      *
      * 调用 GET /api/logout 使服务端 session 失效
      */
-    suspend fun logout(baseUrl: String, sessionToken: String) {
+    suspend fun logout(
+            baseUrl: String,
+            sessionToken: String,
+            customHeaders: List<CustomHeader> = emptyList()
+    ) {
         try {
             val url = baseUrl.trimEnd('/') + "/api/logout"
-            httpClient.post(url) { applyAuth(sessionToken, AuthType.PASSWORD) }
+            httpClient.post(url) {
+                skipSessionInterceptor()
+                applyCustomHeaders(customHeaders)
+                applyAuth(sessionToken, AuthType.PASSWORD)
+            }
             Log.d(TAG, "Logout successful")
         } catch (e: Exception) {
             Log.w(TAG, "Logout error: ${e.message}")

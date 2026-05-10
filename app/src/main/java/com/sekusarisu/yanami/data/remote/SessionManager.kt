@@ -1,6 +1,7 @@
 package com.sekusarisu.yanami.data.remote
 
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -19,9 +20,11 @@ class SessionManager {
             serverId: Long,
             baseUrl: String,
             sessionToken: String,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader> = emptyList()
     ) {
-        _activeSession.value = ActiveSession(serverId, baseUrl, sessionToken, authType)
+        _activeSession.value =
+                ActiveSession(serverId, baseUrl, sessionToken, authType, customHeaders)
     }
 
     /** 清除当前 session（登出或 token 失效时调用） */
@@ -40,6 +43,9 @@ class SessionManager {
 
     /** 快捷获取当前认证类型 */
     fun getAuthType(): AuthType? = _activeSession.value?.authType
+
+    /** 快捷获取当前自定义请求头 */
+    fun getCustomHeaders(): List<CustomHeader> = _activeSession.value?.customHeaders.orEmpty()
 }
 
 /** 活跃 session 信息 */
@@ -47,5 +53,6 @@ data class ActiveSession(
         val serverId: Long,
         val baseUrl: String,
         val sessionToken: String,
-        val authType: AuthType = AuthType.PASSWORD
+        val authType: AuthType = AuthType.PASSWORD,
+        val customHeaders: List<CustomHeader> = emptyList()
 )

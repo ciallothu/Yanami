@@ -7,6 +7,7 @@ import com.sekusarisu.yanami.data.remote.dto.NodeStatusDto
 import com.sekusarisu.yanami.data.remote.dto.PingRecordsResponseDto
 import com.sekusarisu.yanami.data.remote.dto.RecentStatusItemDto
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -42,7 +43,10 @@ import kotlinx.serialization.builtins.serializer
  *
  * 所有请求通过 Cookie: session_token=xxx 进行认证。
  */
-class KomariRpcService(private val httpClient: HttpClient) {
+class KomariRpcService(
+        private val httpClient: HttpClient,
+        private val sessionManager: SessionManager
+) {
 
     companion object {
         private const val TAG = "KomariRpc"
@@ -64,9 +68,17 @@ class KomariRpcService(private val httpClient: HttpClient) {
     suspend fun getNodes(
             baseUrl: String,
             sessionToken: String,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): Map<String, NodeInfoDto> {
-        val envelope = callRpcHttp(baseUrl, sessionToken, "common:getNodes", authType = authType)
+        val envelope =
+                callRpcHttp(
+                        baseUrl,
+                        sessionToken,
+                        "common:getNodes",
+                        authType = authType,
+                        customHeaders = customHeaders
+                )
         return decodeOptionalRpcResult(
                 envelope,
                 MapSerializer(String.serializer(), NodeInfoDto.serializer()),
@@ -81,10 +93,17 @@ class KomariRpcService(private val httpClient: HttpClient) {
     suspend fun getNodesLatestStatus(
             baseUrl: String,
             sessionToken: String,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): Map<String, NodeStatusDto> {
         val envelope =
-                callRpcHttp(baseUrl, sessionToken, "common:getNodesLatestStatus", authType = authType)
+                callRpcHttp(
+                        baseUrl,
+                        sessionToken,
+                        "common:getNodesLatestStatus",
+                        authType = authType,
+                        customHeaders = customHeaders
+                )
         return decodeOptionalRpcResult(
                 envelope,
                 MapSerializer(String.serializer(), NodeStatusDto.serializer()),
@@ -99,10 +118,17 @@ class KomariRpcService(private val httpClient: HttpClient) {
     suspend fun getVersion(
             baseUrl: String,
             sessionToken: String,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): String {
         val envelope =
-                callRpcHttp(baseUrl, sessionToken, "common:getVersion", authType = authType)
+                callRpcHttp(
+                        baseUrl,
+                        sessionToken,
+                        "common:getVersion",
+                        authType = authType,
+                        customHeaders = customHeaders
+                )
         val result = decodeRpcResult(envelope, RpcVersionResult.serializer())
         return result.version.ifBlank { throw RpcException(-1, "Invalid version response") }
     }
@@ -117,11 +143,16 @@ class KomariRpcService(private val httpClient: HttpClient) {
             baseUrl: String,
             sessionToken: String,
             uuid: String,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): List<RecentStatusItemDto> {
         val url = baseUrl.trimEnd('/') + "/api/recent/$uuid"
         val response =
                 httpClient.get(url) {
+                    if (customHeaders != null) {
+                        skipSessionInterceptor()
+                    }
+                    applyCustomHeaders(resolveCustomHeaders(customHeaders))
                     applyAuth(sessionToken, authType)
                 }
         val responseText = response.bodyAsText()
@@ -147,9 +178,11 @@ class KomariRpcService(private val httpClient: HttpClient) {
             detailUuid: String? = null,
             loadHours: Int? = null,
             pingHours: Int? = null,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): Flow<KomariWsEvent> = channelFlow {
         val endpoint = buildKomariWebSocketEndpoint(baseUrl, "/api/rpc2")
+        val resolvedCustomHeaders = resolveCustomHeaders(customHeaders)
 
         var requestId = 1
 
@@ -267,6 +300,7 @@ class KomariRpcService(private val httpClient: HttpClient) {
                 endpoint = endpoint,
                 sessionToken = sessionToken,
                 authType = authType,
+                customHeaders = resolvedCustomHeaders,
                 loggerTag = TAG,
                 reconnectDelayMs = 5_000L,
                 maxReconnectDelayMs = 30_000L,
@@ -285,7 +319,8 @@ class KomariRpcService(private val httpClient: HttpClient) {
             sessionToken: String,
             method: String,
             params: JsonObject? = null,
-            authType: AuthType = AuthType.PASSWORD
+            authType: AuthType = AuthType.PASSWORD,
+            customHeaders: List<CustomHeader>? = null
     ): RpcEnvelope {
         val url = baseUrl.trimEnd('/') + "/api/rpc2"
         val requestBody = buildJsonObject {
@@ -298,11 +333,19 @@ class KomariRpcService(private val httpClient: HttpClient) {
         val response =
                 httpClient.post(url) {
                     contentType(ContentType.Application.Json)
+                    if (customHeaders != null) {
+                        skipSessionInterceptor()
+                    }
+                    applyCustomHeaders(resolveCustomHeaders(customHeaders))
                     applyAuth(sessionToken, authType)
                     setBody(requestBody.toString())
                 }
 
         return decodeRpcEnvelope(response.bodyAsText())
+    }
+
+    private fun resolveCustomHeaders(customHeaders: List<CustomHeader>?): List<CustomHeader> {
+        return customHeaders ?: sessionManager.getCustomHeaders()
     }
 
     private fun decodeRpcEnvelope(rawText: String): RpcEnvelope {

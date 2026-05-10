@@ -56,6 +56,16 @@
     <string name="add_server_fill_all">请填写完整信息</string>
     <string name="add_server_saved">服务器已添加</string>
     <string name="add_server_save_failed">保存失败: %s</string>
+    <string name="add_server_custom_headers_title">自定义请求头</string>
+    <string name="add_server_header_name_label">Header 名称</string>
+    <string name="add_server_header_name_hint">CF-Access-Client-Id</string>
+    <string name="add_server_header_value_label">Header 值</string>
+    <string name="add_server_add_header">添加 Header</string>
+    <string name="add_server_remove_header">删除 Header</string>
+    <string name="add_server_header_name_required">请填写 Header 名称</string>
+    <string name="add_server_header_value_required">请填写 Header 值</string>
+    <string name="add_server_header_name_invalid">Header 名称无效: %s</string>
+    <string name="add_server_header_name_duplicate">Header 名称重复: %s</string>
 
     <!-- 认证模式 -->
     <string name="auth_type_password">账号密码</string>

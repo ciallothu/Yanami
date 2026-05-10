@@ -1,5 +1,6 @@
 package com.sekusarisu.yanami.domain.repository
 
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import kotlinx.coroutines.flow.Flow
 
@@ -46,7 +47,8 @@ interface ServerRepository {
             baseUrl: String,
             username: String,
             password: String,
-            twoFaCode: String? = null
+            twoFaCode: String? = null,
+            customHeaders: List<CustomHeader> = emptyList()
     ): String
 
     /**
@@ -54,14 +56,21 @@ interface ServerRepository {
      *
      * @return 成功返回版本信息，失败抛出异常
      */
-    suspend fun testConnectionWithApiKey(baseUrl: String, apiKey: String): String
+    suspend fun testConnectionWithApiKey(
+            baseUrl: String,
+            apiKey: String,
+            customHeaders: List<CustomHeader> = emptyList()
+    ): String
 
     /**
      * 使用游客模式测试与服务端的连接（无认证）
      *
      * @return 成功返回版本信息，失败抛出异常
      */
-    suspend fun testConnectionAsGuest(baseUrl: String): String
+    suspend fun testConnectionAsGuest(
+            baseUrl: String,
+            customHeaders: List<CustomHeader> = emptyList()
+    ): String
 
     /**
      * 登录到指定实例

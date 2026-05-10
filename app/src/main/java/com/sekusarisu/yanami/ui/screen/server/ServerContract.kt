@@ -1,6 +1,7 @@
 package com.sekusarisu.yanami.ui.screen.server
 
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.mvi.UiEffect
 import com.sekusarisu.yanami.mvi.UiEvent
@@ -28,7 +29,8 @@ object ServerContract {
             val testResult: String? = null,
             val testError: String? = null,
             val authType: AuthType = AuthType.PASSWORD,
-            val apiKey: String = ""
+            val apiKey: String = "",
+            val customHeaders: List<CustomHeader> = emptyList()
     ) : UiState
 
     // ─── 事件 ───
@@ -45,6 +47,10 @@ object ServerContract {
         data class UpdateTwoFaCode(val code: String) : Event
         data class UpdateAuthType(val authType: AuthType) : Event
         data class UpdateApiKey(val apiKey: String) : Event
+        data object AddCustomHeader : Event
+        data class RemoveCustomHeader(val index: Int) : Event
+        data class UpdateCustomHeaderName(val index: Int, val name: String) : Event
+        data class UpdateCustomHeaderValue(val index: Int, val value: String) : Event
         data object TestConnection : Event
         data object SaveServer : Event
     }

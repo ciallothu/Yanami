@@ -2,6 +2,8 @@ package com.sekusarisu.yanami.data.remote
 
 import android.util.Log
 import com.sekusarisu.yanami.domain.model.AuthType
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -20,12 +22,38 @@ class SessionCookieInterceptor(private val sessionManager: SessionManager) : Int
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
+        val skipSessionInterceptor =
+                originalRequest.header(SKIP_SESSION_INTERCEPTOR_HEADER) != null
 
-        val sessionToken = sessionManager.getSessionToken()
+        val shouldInject = shouldInjectForRequest(originalRequest.url, sessionManager.getBaseUrl())
+        val sessionToken = if (shouldInject) sessionManager.getSessionToken() else null
         val authType = sessionManager.getAuthType() ?: AuthType.PASSWORD
+        val customHeaders = if (shouldInject) sessionManager.getCustomHeaders() else emptyList()
 
-        return if (!sessionToken.isNullOrBlank()) {
-            val newRequest =
+        var builder =
+                if (skipSessionInterceptor) {
+                    originalRequest.newBuilder().removeHeader(SKIP_SESSION_INTERCEPTOR_HEADER)
+                } else {
+                    originalRequest.newBuilder()
+                }
+
+        if (skipSessionInterceptor) {
+            return chain.proceed(builder.build())
+        }
+
+        var changed = false
+
+        customHeaders.forEach { customHeader ->
+            val name = customHeader.name.trim()
+            val value = customHeader.value.trim()
+            if (name.isNotEmpty() && value.isNotEmpty()) {
+                builder = builder.header(name, value)
+                changed = true
+            }
+        }
+
+        if (!sessionToken.isNullOrBlank()) {
+            builder =
                     when (authType) {
                         AuthType.API_KEY -> {
                             val authHeader = buildAuthHeader(sessionToken, authType)
@@ -34,10 +62,7 @@ class SessionCookieInterceptor(private val sessionManager: SessionManager) : Int
                                     TAG,
                                     "Injecting Bearer token for ${originalRequest.url.host}${originalRequest.url.encodedPath}"
                             )
-                            originalRequest
-                                    .newBuilder()
-                                    .header(authHeader.name, authHeader.value)
-                                    .build()
+                            builder.header(authHeader.name, authHeader.value)
                         }
                         AuthType.PASSWORD -> {
                             // 构造 Cookie header，保留原有 Cookie（如果有的话）
@@ -51,18 +76,27 @@ class SessionCookieInterceptor(private val sessionManager: SessionManager) : Int
                                     TAG,
                                     "Injecting session cookie for ${originalRequest.url.host}${originalRequest.url.encodedPath}"
                             )
-                            originalRequest
-                                    .newBuilder()
-                                    .header("Cookie", fullCookie)
-                                    .build()
+                            builder.header("Cookie", fullCookie)
                         }
                         AuthType.GUEST -> {
-                            originalRequest
+                            builder
                         }
                     }
-            chain.proceed(newRequest)
-        } else {
-            chain.proceed(originalRequest)
+            changed = true
         }
+
+        return chain.proceed(if (changed) builder.build() else originalRequest)
+    }
+
+    private fun shouldInjectForRequest(requestUrl: HttpUrl, activeBaseUrl: String?): Boolean {
+        val activeUrl = activeBaseUrl?.trim()?.trimEnd('/')?.toHttpUrlOrNull() ?: return false
+        if (!requestUrl.scheme.equals(activeUrl.scheme, ignoreCase = true)) return false
+        if (!requestUrl.host.equals(activeUrl.host, ignoreCase = true)) return false
+        if (requestUrl.port != activeUrl.port) return false
+
+        val activePath = activeUrl.encodedPath.trimEnd('/')
+        return activePath.isBlank() ||
+                requestUrl.encodedPath == activePath ||
+                requestUrl.encodedPath.startsWith("$activePath/")
     }
 }

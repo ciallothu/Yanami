@@ -1,6 +1,7 @@
 package com.sekusarisu.yanami.data.backup
 
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.TerminalSnippet
 import kotlinx.serialization.Serializable
 
@@ -27,7 +28,8 @@ data class BackupServer(
         val isActive: Boolean = false,
         val createdAt: Long = System.currentTimeMillis(),
         val authType: AuthType = AuthType.PASSWORD,
-        val apiKey: String? = null
+        val apiKey: String? = null,
+        val customHeaders: List<CustomHeader> = emptyList()
 )
 
 data class ConfigExportSummary(

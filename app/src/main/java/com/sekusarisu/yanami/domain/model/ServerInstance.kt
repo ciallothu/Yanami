@@ -16,5 +16,6 @@ data class ServerInstance(
         val isActive: Boolean = false,
         val createdAt: Long = System.currentTimeMillis(),
         val authType: AuthType = AuthType.PASSWORD,
-        val apiKey: String? = null
+        val apiKey: String? = null,
+        val customHeaders: List<CustomHeader> = emptyList()
 )

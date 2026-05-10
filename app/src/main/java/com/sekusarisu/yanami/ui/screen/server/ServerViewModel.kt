@@ -4,6 +4,7 @@ import android.content.Context
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.domain.repository.Requires2FAException
 import com.sekusarisu.yanami.domain.repository.ServerRepository
@@ -109,6 +110,46 @@ class AddServerViewModel(
                         )
                     }
             is ServerContract.Event.UpdateApiKey -> setState { copy(apiKey = event.apiKey) }
+            is ServerContract.Event.AddCustomHeader ->
+                    setState {
+                        copy(
+                                customHeaders =
+                                        customHeaders +
+                                                CustomHeader(
+                                                        defaultCustomHeaderName(customHeaders),
+                                                        ""
+                                                )
+                        )
+                    }
+            is ServerContract.Event.RemoveCustomHeader ->
+                    setState {
+                        copy(
+                                customHeaders =
+                                        customHeaders.filterIndexed { index, _ ->
+                                            index != event.index
+                                        }
+                        )
+                    }
+            is ServerContract.Event.UpdateCustomHeaderName ->
+                    setState {
+                        copy(
+                                customHeaders =
+                                        customHeaders.mapIndexed { index, header ->
+                                            if (index == event.index) header.copy(name = event.name)
+                                            else header
+                                        }
+                        )
+                    }
+            is ServerContract.Event.UpdateCustomHeaderValue ->
+                    setState {
+                        copy(
+                                customHeaders =
+                                        customHeaders.mapIndexed { index, header ->
+                                            if (index == event.index) header.copy(value = event.value)
+                                            else header
+                                        }
+                        )
+                    }
             is ServerContract.Event.TestConnection -> testConnection()
             is ServerContract.Event.SaveServer -> saveServer()
             else -> {
@@ -119,6 +160,13 @@ class AddServerViewModel(
 
     private fun testConnection() {
         val state = currentState
+        val customHeaders =
+                try {
+                    normalizeCustomHeaders(state.customHeaders)
+                } catch (e: IllegalArgumentException) {
+                    sendEffect(ServerContract.Effect.ShowToast(e.message.orEmpty()))
+                    return
+                }
 
         when (state.authType) {
             AuthType.GUEST -> {
@@ -163,11 +211,15 @@ class AddServerViewModel(
                 val version =
                         when (state.authType) {
                             AuthType.GUEST ->
-                                    repository.testConnectionAsGuest(state.baseUrl)
+                                    repository.testConnectionAsGuest(
+                                            state.baseUrl,
+                                            customHeaders
+                                    )
                             AuthType.API_KEY ->
                                     repository.testConnectionWithApiKey(
                                             state.baseUrl,
-                                            state.apiKey
+                                            state.apiKey,
+                                            customHeaders
                                     )
                             AuthType.PASSWORD -> {
                                 val twoFaCode = state.twoFaCode.ifBlank { null }
@@ -175,7 +227,8 @@ class AddServerViewModel(
                                         state.baseUrl,
                                         state.username,
                                         state.password,
-                                        twoFaCode
+                                        twoFaCode,
+                                        customHeaders
                                 )
                             }
                         }
@@ -211,6 +264,13 @@ class AddServerViewModel(
 
     private fun saveServer() {
         val state = currentState
+        val customHeaders =
+                try {
+                    normalizeCustomHeaders(state.customHeaders)
+                } catch (e: IllegalArgumentException) {
+                    sendEffect(ServerContract.Effect.ShowToast(e.message.orEmpty()))
+                    return
+                }
 
         when (state.authType) {
             AuthType.GUEST -> {
@@ -261,7 +321,8 @@ class AddServerViewModel(
                                 password = state.password,
                                 requires2fa = state.show2faField,
                                 authType = state.authType,
-                                apiKey = state.apiKey.ifBlank { null }
+                                apiKey = state.apiKey.ifBlank { null },
+                                customHeaders = customHeaders
                         )
 
                 if (editingServer != null) {
@@ -271,7 +332,8 @@ class AddServerViewModel(
                                     original.username != normalizedInstance.username ||
                                     original.password != normalizedInstance.password ||
                                     original.authType != normalizedInstance.authType ||
-                                    original.apiKey != normalizedInstance.apiKey
+                                    original.apiKey != normalizedInstance.apiKey ||
+                                    original.customHeaders != normalizedInstance.customHeaders
 
                     val updated =
                             original.copy(
@@ -282,7 +344,8 @@ class AddServerViewModel(
                                     sessionToken = if (authChanged) null else original.sessionToken,
                                     requires2fa = normalizedInstance.requires2fa,
                                     authType = normalizedInstance.authType,
-                                    apiKey = normalizedInstance.apiKey
+                                    apiKey = normalizedInstance.apiKey,
+                                    customHeaders = normalizedInstance.customHeaders
                             )
                     repository.update(updated)
                     setState { copy(isSaving = false) }
@@ -326,9 +389,63 @@ class AddServerViewModel(
                         password = server.password,
                         show2faField = server.requires2fa,
                         authType = server.authType,
-                        apiKey = server.apiKey ?: ""
+                        apiKey = server.apiKey ?: "",
+                        customHeaders = server.customHeaders
                 )
             }
+        }
+    }
+
+    private fun normalizeCustomHeaders(headers: List<CustomHeader>): List<CustomHeader> {
+        val normalized =
+                headers.map { CustomHeader(it.name.trim(), it.value.trim()) }
+                        .filter { it.name.isNotBlank() || it.value.isNotBlank() }
+        val nameMissing = normalized.any { it.name.isBlank() }
+        if (nameMissing) {
+            throw IllegalArgumentException(
+                    context.getString(R.string.add_server_header_name_required)
+            )
+        }
+        val valueMissing = normalized.any { it.value.isBlank() }
+        if (valueMissing) {
+            throw IllegalArgumentException(
+                    context.getString(R.string.add_server_header_value_required)
+            )
+        }
+        val invalidName = normalized.firstOrNull { !isValidHeaderName(it.name) }
+        if (invalidName != null) {
+            throw IllegalArgumentException(
+                    context.getString(R.string.add_server_header_name_invalid, invalidName.name)
+            )
+        }
+        val duplicateName =
+                normalized.groupBy { it.name.lowercase() }.values.firstOrNull { it.size > 1 }
+        if (duplicateName != null) {
+            throw IllegalArgumentException(
+                    context.getString(
+                            R.string.add_server_header_name_duplicate,
+                            duplicateName.first().name
+                    )
+            )
+        }
+        return normalized
+    }
+
+    private fun isValidHeaderName(name: String): Boolean {
+        return name.all { char ->
+            char in '0'..'9' ||
+                    char in 'A'..'Z' ||
+                    char in 'a'..'z' ||
+                    char in "!#$%&'*+-.^_`|~"
+        }
+    }
+
+    private fun defaultCustomHeaderName(headers: List<CustomHeader>): String {
+        val existingNames = headers.map { it.name.trim().lowercase() }.toSet()
+        return when {
+            "cf-access-client-id" !in existingNames -> "CF-Access-Client-Id"
+            "cf-access-client-secret" !in existingNames -> "CF-Access-Client-Secret"
+            else -> ""
         }
     }
 }

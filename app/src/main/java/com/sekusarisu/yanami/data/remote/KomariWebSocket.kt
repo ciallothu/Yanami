@@ -2,6 +2,7 @@ package com.sekusarisu.yanami.data.remote
 
 import android.util.Log
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -72,9 +73,11 @@ internal suspend fun HttpClient.connectKomariWebSocket(
         endpoint: KomariWebSocketEndpoint,
         sessionToken: String,
         authType: AuthType,
+        customHeaders: List<CustomHeader> = emptyList(),
         block: suspend DefaultClientWebSocketSession.() -> Unit
 ) {
     val requestBuilder: HttpRequestBuilder.() -> Unit = {
+        applyCustomHeaders(customHeaders)
         applyAuth(sessionToken, authType)
         header("Origin", endpoint.origin)
     }
@@ -102,6 +105,7 @@ internal suspend fun HttpClient.runKomariWebSocketLifecycle(
         endpoint: KomariWebSocketEndpoint,
         sessionToken: String,
         authType: AuthType,
+        customHeaders: List<CustomHeader> = emptyList(),
         loggerTag: String,
         reconnectDelayMs: Long? = null,
         maxReconnectDelayMs: Long? = reconnectDelayMs,
@@ -115,7 +119,7 @@ internal suspend fun HttpClient.runKomariWebSocketLifecycle(
         var nextReconnectDelayMs: Long? = null
         try {
             Log.d(loggerTag, "WebSocket connecting to ${endpoint.displayUrl}")
-            connectKomariWebSocket(endpoint, sessionToken, authType, block)
+            connectKomariWebSocket(endpoint, sessionToken, authType, customHeaders, block)
             shouldReconnect = reconnectOnNormalClose && reconnectDelayMs != null
             if (!shouldReconnect) {
                 return

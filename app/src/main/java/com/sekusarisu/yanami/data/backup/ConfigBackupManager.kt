@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.sekusarisu.yanami.data.local.preferences.UserPreferencesRepository
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.domain.model.TerminalSnippet
 import com.sekusarisu.yanami.domain.repository.ServerRepository
@@ -79,7 +80,8 @@ class ConfigBackupManager(
                                 sessionToken = normalizedServer.sessionToken,
                                 requires2fa = normalizedServer.requires2fa,
                                 authType = normalizedServer.authType,
-                                apiKey = normalizedServer.apiKey
+                                apiKey = normalizedServer.apiKey,
+                                customHeaders = normalizedServer.customHeaders
                         )
                 serverRepository.update(updated)
                 existingServersByKey[updated.mergeKey()] = updated
@@ -168,7 +170,8 @@ class ConfigBackupManager(
                 isActive = isActive,
                 createdAt = createdAt,
                 authType = authType,
-                apiKey = apiKey
+                apiKey = apiKey,
+                customHeaders = customHeaders
         )
     }
 
@@ -177,6 +180,7 @@ class ConfigBackupManager(
         val normalizedBaseUrl = baseUrl.trim().trimEnd('/')
         val normalizedUsername = username.trim()
         val normalizedApiKey = apiKey?.trim()?.ifBlank { null }
+        val normalizedCustomHeaders = customHeaders.normalizedCustomHeaders()
 
         if (normalizedName.isBlank() || normalizedBaseUrl.isBlank()) {
             return null
@@ -197,7 +201,8 @@ class ConfigBackupManager(
                             isActive = false,
                             createdAt = createdAt,
                             authType = authType,
-                            apiKey = null
+                            apiKey = null,
+                            customHeaders = normalizedCustomHeaders
                     )
                 }
             }
@@ -215,7 +220,8 @@ class ConfigBackupManager(
                             isActive = false,
                             createdAt = createdAt,
                             authType = authType,
-                            apiKey = normalizedApiKey
+                            apiKey = normalizedApiKey,
+                            customHeaders = normalizedCustomHeaders
                     )
                 }
             }
@@ -230,7 +236,8 @@ class ConfigBackupManager(
                         isActive = false,
                         createdAt = createdAt,
                         authType = authType,
-                        apiKey = null
+                        apiKey = null,
+                        customHeaders = normalizedCustomHeaders
                 )
             }
         }
@@ -257,5 +264,11 @@ class ConfigBackupManager(
 
     private fun normalizeSnippetContent(content: String): String {
         return content.replace("\r\n", "\n").replace('\r', '\n')
+    }
+
+    private fun List<CustomHeader>.normalizedCustomHeaders(): List<CustomHeader> {
+        return map { CustomHeader(it.name.trim(), it.value.trim()) }
+                .filter { it.name.isNotBlank() && it.value.isNotBlank() }
+                .distinctBy { it.name.lowercase() }
     }
 }

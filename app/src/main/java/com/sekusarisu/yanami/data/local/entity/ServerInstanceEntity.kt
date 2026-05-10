@@ -21,5 +21,6 @@ data class ServerInstanceEntity(
         @ColumnInfo(name = "is_active") val isActive: Boolean = false,
         @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
         @ColumnInfo(name = "auth_type") val authType: String = "PASSWORD",
-        @ColumnInfo(name = "encrypted_api_key") val encryptedApiKey: String? = null
+        @ColumnInfo(name = "encrypted_api_key") val encryptedApiKey: String? = null,
+        @ColumnInfo(name = "encrypted_custom_headers") val encryptedCustomHeaders: String? = null
 )

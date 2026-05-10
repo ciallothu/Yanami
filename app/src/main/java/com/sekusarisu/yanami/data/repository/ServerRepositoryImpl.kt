@@ -9,12 +9,15 @@ import com.sekusarisu.yanami.data.remote.KomariRpcService
 import com.sekusarisu.yanami.data.remote.LoginResult
 import com.sekusarisu.yanami.data.remote.SessionManager
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.domain.model.ServerInstance
 import com.sekusarisu.yanami.domain.repository.Requires2FAException
 import com.sekusarisu.yanami.domain.repository.ServerRepository
 import com.sekusarisu.yanami.domain.repository.SessionExpiredException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 
 /**
  * 服务端实例仓库实现
@@ -37,6 +40,8 @@ class ServerRepositoryImpl(
     companion object {
         private const val TAG = "ServerRepo"
     }
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun getAll(): List<ServerInstance> {
         return dao.getAll().map { it.toDomain() }
@@ -81,10 +86,11 @@ class ServerRepositoryImpl(
             baseUrl: String,
             username: String,
             password: String,
-            twoFaCode: String?
+            twoFaCode: String?,
+            customHeaders: List<CustomHeader>
     ): String {
         // 1. 登录获取 session_token
-        val loginResult = authService.login(baseUrl, username, password, twoFaCode)
+        val loginResult = authService.login(baseUrl, username, password, twoFaCode, customHeaders)
         val sessionToken =
                 when (loginResult) {
                     is LoginResult.Success -> loginResult.sessionToken
@@ -93,20 +99,44 @@ class ServerRepositoryImpl(
                 }
 
         // 2. 用 session_token 调用 RPC 获取版本号验证
-        val version = rpcService.getVersion(baseUrl, sessionToken)
+        val version =
+                rpcService.getVersion(
+                        baseUrl,
+                        sessionToken,
+                        customHeaders = customHeaders
+                )
         Log.d(TAG, "Test connection ok, version=$version")
         return version
     }
 
-    override suspend fun testConnectionWithApiKey(baseUrl: String, apiKey: String): String {
+    override suspend fun testConnectionWithApiKey(
+            baseUrl: String,
+            apiKey: String,
+            customHeaders: List<CustomHeader>
+    ): String {
         // 使用 Bearer 认证调用 getVersion 验证 API Key
-        val version = rpcService.getVersion(baseUrl, apiKey, AuthType.API_KEY)
+        val version =
+                rpcService.getVersion(
+                        baseUrl,
+                        apiKey,
+                        AuthType.API_KEY,
+                        customHeaders = customHeaders
+                )
         Log.d(TAG, "Test connection with API Key ok, version=$version")
         return version
     }
 
-    override suspend fun testConnectionAsGuest(baseUrl: String): String {
-        val version = rpcService.getVersion(baseUrl, "", AuthType.GUEST)
+    override suspend fun testConnectionAsGuest(
+            baseUrl: String,
+            customHeaders: List<CustomHeader>
+    ): String {
+        val version =
+                rpcService.getVersion(
+                        baseUrl,
+                        "",
+                        AuthType.GUEST,
+                        customHeaders = customHeaders
+                )
         Log.d(TAG, "Test connection as guest ok, version=$version")
         return version
     }
@@ -114,7 +144,13 @@ class ServerRepositoryImpl(
     override suspend fun login(instance: ServerInstance, twoFaCode: String?): Boolean {
         // GUEST 模式：直接设置空 session，无需登录
         if (instance.authType == AuthType.GUEST) {
-            sessionManager.setSession(instance.id, instance.baseUrl, "", AuthType.GUEST)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    "",
+                    AuthType.GUEST,
+                    instance.customHeaders
+            )
             Log.d(TAG, "Guest session set for server ${instance.name}")
             return true
         }
@@ -123,18 +159,35 @@ class ServerRepositoryImpl(
         if (instance.authType == AuthType.API_KEY) {
             val apiKey = instance.apiKey
                     ?: throw Exception("API Key is missing")
-            sessionManager.setSession(instance.id, instance.baseUrl, apiKey, AuthType.API_KEY)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    apiKey,
+                    AuthType.API_KEY,
+                    instance.customHeaders
+            )
             Log.d(TAG, "API Key session set for server ${instance.name}")
             return true
         }
 
         val loginResult =
-                authService.login(instance.baseUrl, instance.username, instance.password, twoFaCode)
+                authService.login(
+                        instance.baseUrl,
+                        instance.username,
+                        instance.password,
+                        twoFaCode,
+                        instance.customHeaders
+                )
 
         return when (loginResult) {
             is LoginResult.Success -> {
                 // 更新内存 session
-                sessionManager.setSession(instance.id, instance.baseUrl, loginResult.sessionToken)
+                sessionManager.setSession(
+                        instance.id,
+                        instance.baseUrl,
+                        loginResult.sessionToken,
+                        customHeaders = instance.customHeaders
+                )
 
                 // 持久化 session_token（加密）
                 val encryptedToken = cryptoManager.encrypt(loginResult.sessionToken)
@@ -155,7 +208,13 @@ class ServerRepositoryImpl(
     override suspend fun ensureSessionToken(instance: ServerInstance): String {
         // GUEST 模式：直接返回空 token
         if (instance.authType == AuthType.GUEST) {
-            sessionManager.setSession(instance.id, instance.baseUrl, "", AuthType.GUEST)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    "",
+                    AuthType.GUEST,
+                    instance.customHeaders
+            )
             return ""
         }
 
@@ -163,7 +222,13 @@ class ServerRepositoryImpl(
         if (instance.authType == AuthType.API_KEY) {
             val apiKey = instance.apiKey
                     ?: throw SessionExpiredException("API Key is missing")
-            sessionManager.setSession(instance.id, instance.baseUrl, apiKey, AuthType.API_KEY)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    apiKey,
+                    AuthType.API_KEY,
+                    instance.customHeaders
+            )
             return apiKey
         }
 
@@ -178,7 +243,13 @@ class ServerRepositoryImpl(
     override suspend fun restoreSession(instance: ServerInstance): Boolean {
         // GUEST 模式：直接设置空 session
         if (instance.authType == AuthType.GUEST) {
-            sessionManager.setSession(instance.id, instance.baseUrl, "", AuthType.GUEST)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    "",
+                    AuthType.GUEST,
+                    instance.customHeaders
+            )
             Log.d(TAG, "Guest session restored for server ${instance.name}")
             return true
         }
@@ -191,7 +262,13 @@ class ServerRepositoryImpl(
                 sessionManager.clearSession()
                 return false
             }
-            sessionManager.setSession(instance.id, instance.baseUrl, apiKey, AuthType.API_KEY)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    apiKey,
+                    AuthType.API_KEY,
+                    instance.customHeaders
+            )
             Log.d(TAG, "API Key session restored for server ${instance.name}")
             return true
         }
@@ -204,9 +281,19 @@ class ServerRepositoryImpl(
         }
 
         // 验证 token 有效性
-        val isValid = authService.validateSession(instance.baseUrl, cachedToken)
+        val isValid =
+                authService.validateSession(
+                        instance.baseUrl,
+                        cachedToken,
+                        instance.customHeaders
+                )
         if (isValid) {
-            sessionManager.setSession(instance.id, instance.baseUrl, cachedToken)
+            sessionManager.setSession(
+                    instance.id,
+                    instance.baseUrl,
+                    cachedToken,
+                    customHeaders = instance.customHeaders
+            )
             Log.d(TAG, "Session restored for server ${instance.name}")
             return true
         }
@@ -282,7 +369,8 @@ class ServerRepositoryImpl(
                             } catch (e: Exception) {
                                 null
                             }
-                        }
+                        },
+                customHeaders = decryptCustomHeaders(encryptedCustomHeaders)
         )
     }
 
@@ -312,7 +400,36 @@ class ServerRepositoryImpl(
                             } catch (e: Exception) {
                                 null
                             }
-                        }
+                        },
+                encryptedCustomHeaders = encryptCustomHeaders(customHeaders)
         )
+    }
+
+    private fun decryptCustomHeaders(encryptedCustomHeaders: String?): List<CustomHeader> {
+        if (encryptedCustomHeaders.isNullOrBlank()) return emptyList()
+        return try {
+            val rawJson = cryptoManager.decrypt(encryptedCustomHeaders)
+            json.decodeFromString(ListSerializer(CustomHeader.serializer()), rawJson)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun encryptCustomHeaders(customHeaders: List<CustomHeader>): String? {
+        val sanitized =
+                customHeaders
+                        .map { CustomHeader(it.name.trim(), it.value.trim()) }
+                        .filter { it.name.isNotBlank() && it.value.isNotBlank() }
+        if (sanitized.isEmpty()) return null
+        return try {
+            cryptoManager.encrypt(
+                    json.encodeToString(
+                            ListSerializer(CustomHeader.serializer()),
+                            sanitized
+                    )
+            )
+        } catch (e: Exception) {
+            null
+        }
     }
 }

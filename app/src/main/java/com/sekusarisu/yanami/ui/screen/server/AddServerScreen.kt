@@ -2,7 +2,9 @@ package com.sekusarisu.yanami.ui.screen.server
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
@@ -42,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -55,6 +60,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.sekusarisu.yanami.R
 import com.sekusarisu.yanami.domain.model.AuthType
+import com.sekusarisu.yanami.domain.model.CustomHeader
 import com.sekusarisu.yanami.ui.screen.AdaptiveContentPane
 import com.sekusarisu.yanami.ui.screen.nodelist.NodeListScreen
 import com.sekusarisu.yanami.ui.screen.rememberAdaptiveLayoutInfo
@@ -186,6 +192,13 @@ fun AddServerContent(
                                     keyboardType = KeyboardType.Uri,
                                     imeAction = ImeAction.Next
                             )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            CustomHeadersSection(
+                    customHeaders = state.customHeaders,
+                    onEvent = onEvent
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -429,6 +442,83 @@ fun AddServerContent(
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun CustomHeadersSection(
+        customHeaders: List<CustomHeader>,
+        onEvent: (ServerContract.Event) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+                text = stringResource(R.string.add_server_custom_headers_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        customHeaders.forEachIndexed { index, header ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                            value = header.name,
+                            onValueChange = {
+                                onEvent(ServerContract.Event.UpdateCustomHeaderName(index, it))
+                            },
+                            label = {
+                                Text(stringResource(R.string.add_server_header_name_label))
+                            },
+                            placeholder = {
+                                Text(stringResource(R.string.add_server_header_name_hint))
+                            },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                    )
+                    IconButton(
+                            onClick =
+                                    soundClick {
+                                        onEvent(ServerContract.Event.RemoveCustomHeader(index))
+                                    }
+                    ) {
+                        Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription =
+                                        stringResource(R.string.add_server_remove_header)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                        value = header.value,
+                        onValueChange = {
+                            onEvent(ServerContract.Event.UpdateCustomHeaderValue(index, it))
+                        },
+                        label = { Text(stringResource(R.string.add_server_header_value_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions =
+                                KeyboardOptions(
+                                        keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Next
+                                )
+                )
+            }
+        }
+
+        FilledTonalButton(
+                onClick = soundClick { onEvent(ServerContract.Event.AddCustomHeader) },
+                modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+            Text(stringResource(R.string.add_server_add_header))
         }
     }
 }

@@ -56,6 +56,16 @@
     <string name="add_server_fill_all">Please fill in all required fields</string>
     <string name="add_server_saved">Server added</string>
     <string name="add_server_save_failed">Save failed: %s</string>
+    <string name="add_server_custom_headers_title">Custom Headers</string>
+    <string name="add_server_header_name_label">Header name</string>
+    <string name="add_server_header_name_hint">CF-Access-Client-Id</string>
+    <string name="add_server_header_value_label">Header value</string>
+    <string name="add_server_add_header">Add Header</string>
+    <string name="add_server_remove_header">Remove Header</string>
+    <string name="add_server_header_name_required">Please fill in the header name</string>
+    <string name="add_server_header_value_required">Please fill in the header value</string>
+    <string name="add_server_header_name_invalid">Invalid header name: %s</string>
+    <string name="add_server_header_name_duplicate">Duplicate header name: %s</string>
 
     <!-- Auth Type -->
     <string name="auth_type_password">Password</string>

@@ -29,7 +29,8 @@ struct KomariClient {
             throw KomariClientError.invalidResponse
         }
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw KomariClientError.httpStatus(httpResponse.statusCode)
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw KomariClientError.httpStatus(httpResponse.statusCode, path: "/api/login", body: body)
         }
         if let token = extractSessionToken(from: httpResponse) {
             return token

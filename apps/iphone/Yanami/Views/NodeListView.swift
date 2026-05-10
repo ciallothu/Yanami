@@ -176,7 +176,7 @@ private struct NodeRowView: View {
                         VStack(spacing: 4) {
                             ZStack {
                                 Circle()
-                                    .stroke(Color(.systemGray5), lineWidth: 5)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 5)
                                 Circle()
                                     .trim(from: 0, to: CGFloat(traffic.percent))
                                     .stroke(Color.purple, style: StrokeStyle(lineWidth: 5, lineCap: .round))

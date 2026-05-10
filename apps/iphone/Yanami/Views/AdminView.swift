@@ -52,10 +52,22 @@ class AdminStore: ObservableObject {
             self.error = error.localizedDescription
         }
     }
+    
+    @MainActor
+    func fetchClientToken(uuid: String) async -> String? {
+        do {
+            return try await client.getClientToken(token: token, uuid: uuid)
+        } catch {
+            self.error = error.localizedDescription
+            return nil
+        }
+    }
 }
 
 struct AdminView: View {
     @StateObject var store: AdminStore
+    @State private var showingTokenAlert = false
+    @State private var selectedToken = ""
     
     var body: some View {
         List {
@@ -81,6 +93,15 @@ struct AdminView: View {
                                 Button("Delete", role: .destructive) {
                                     Task { await store.deleteClient(uuid: client.uuid) }
                                 }
+                                Button("Token") {
+                                    Task {
+                                        if let token = await store.fetchClientToken(uuid: client.uuid) {
+                                            selectedToken = token
+                                            showingTokenAlert = true
+                                        }
+                                    }
+                                }
+                                .tint(.blue)
                             }
                         }
                     }
@@ -117,6 +138,15 @@ struct AdminView: View {
             if store.clients.isEmpty && store.pingTasks.isEmpty {
                 await store.loadData()
             }
+        }
+        .alert("Client Token", isPresented: $showingTokenAlert) {
+            Button("Copy", role: .cancel) {
+                #if os(iOS)
+                UIPasteboard.general.string = selectedToken
+                #endif
+            }
+        } message: {
+            Text(selectedToken)
         }
     }
 }

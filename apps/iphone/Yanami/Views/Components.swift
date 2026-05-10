@@ -27,7 +27,7 @@ struct CircularUsageIndicator: View {
         VStack(spacing: 4) {
             ZStack {
                 Circle()
-                    .stroke(Color(.systemGray5), lineWidth: strokeWidth)
+                    .stroke(Color.gray.opacity(0.2), lineWidth: strokeWidth)
                 
                 Circle()
                     .trim(from: 0, to: CGFloat(min(max(percent / 100, 0), 1)))

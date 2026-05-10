@@ -295,8 +295,7 @@ private struct NodeHeaderView: View {
         }
     }
 }
-import Foundation
-import Combine
+
 
 @MainActor
 final class SshTerminalViewModel: ObservableObject {
@@ -332,7 +331,7 @@ final class SshTerminalViewModel: ObservableObject {
         }
         
         let session = URLSession(configuration: .default)
-        webSocketTask = session.webSocketTask(for: request)
+        webSocketTask = session.webSocketTask(with: request)
         webSocketTask?.resume()
         
         self.isConnecting = true
@@ -442,8 +441,6 @@ final class SshTerminalViewModel: ObservableObject {
 extension NSNotification.Name {
     static let sshTerminalOutput = NSNotification.Name("sshTerminalOutput")
 }
-import SwiftUI
-import WebKit
 
 struct SshTerminalView: View {
     @StateObject var viewModel: SshTerminalViewModel

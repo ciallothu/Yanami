@@ -1,12 +1,12 @@
 [English](README.md) | 简体中文
 
-# Yanami
+# YanamiNext
 
 <p style="text-align: center;">
     <img alt="banner" src="assets/banner.png">
 </p>
 
-**Yanami** 支持 Android & iPhone，用于连接 [Komari](https://github.com/komari-monitor/komari) 服务器监控工具。Android 端采用 Material Design 3，iPhone 端采用 SwiftUI。
+**YanamiNext** 支持 Android & iPhone，用于连接 [Komari](https://github.com/komari-monitor/komari) 服务器监控工具。Android 端采用 Material Design 3，iPhone 端采用 SwiftUI。
 
 > A Komari client that supports Android & iPhone.
 
@@ -100,11 +100,12 @@
 ./gradlew clean assembleDebug
 
 # 未签名 iPhone IPA
-BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_NUMBER=${GITHUB_RUN_NUMBER:-1}
+BRANCH_REF=${GITHUB_REF_NAME:-local}
+BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
 SHORT_SHA=${GITHUB_SHA:-local}
 SHORT_SHA=${SHORT_SHA:0:7}
-VERSION="${BASE_VERSION}-${SHORT_SHA}"
+VERSION="YanamiNext-Build-${BRANCH_VERSION:-local}-${SHORT_SHA}"
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
@@ -117,15 +118,15 @@ xcodebuild \
   CODE_SIGN_IDENTITY="" \
   DEVELOPMENT_TEAM="" \
   PROVISIONING_PROFILE_SPECIFIER="" \
-  MARKETING_VERSION="$BASE_VERSION" \
+  MARKETING_VERSION="1.0" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   build
 mkdir -p build/ios-ipa/Payload
-ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/Yanami.app
-(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
+ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/YanamiNext.app
+(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../${VERSION}.ipa")
 ```
 
-Android 构建产物位于 `app/build/outputs/apk/`。未签名 iPhone IPA 位于 `build/Yanami-v<基础版本>-<短提交号>.ipa`，安装到真机前需要使用者自行签名。
+Android 构建产物位于 `app/build/outputs/apk/`。CI 预发布产物使用 `YanamiNext-Build-<分支>-<短提交号>`；未签名 iPhone IPA 位于 `build/YanamiNext-Build-<分支>-<短提交号>.ipa`，安装到真机前需要使用者自行签名。
 
 ## 技术栈
 

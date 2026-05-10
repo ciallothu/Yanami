@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct YanamiApp: App {
+struct YanamiNextApp: App {
     @StateObject private var store = AppStore()
 
     var body: some Scene {

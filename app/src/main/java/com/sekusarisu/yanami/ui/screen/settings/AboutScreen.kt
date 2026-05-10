@@ -107,7 +107,7 @@ class AboutScreen : Screen {
                                 title = stringResource(R.string.about_github),
                                 subtitle = stringResource(R.string.about_github_desc),
                                 onClick = soundClick {
-                                    uriHandler.openUri("https://github.com/icylian/Yanami")
+                                    uriHandler.openUri("https://github.com/ciallothu/YanamiNext")
                                 }
                         )
                     }

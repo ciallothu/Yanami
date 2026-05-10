@@ -1,6 +1,6 @@
-# Yanami iPhone
+# YanamiNext iPhone
 
-Native SwiftUI iPhone app for Yanami.
+Native SwiftUI iPhone app for YanamiNext.
 
 ## Scope
 
@@ -14,11 +14,12 @@ Native SwiftUI iPhone app for Yanami.
 ## Build
 
 ```bash
-BASE_VERSION=$(grep 'versionName' ../app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_NUMBER=${GITHUB_RUN_NUMBER:-1}
+BRANCH_REF=${GITHUB_REF_NAME:-local}
+BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
 SHORT_SHA=${GITHUB_SHA:-local}
 SHORT_SHA=${SHORT_SHA:0:7}
-VERSION="${BASE_VERSION}-${SHORT_SHA}"
+VERSION="YanamiNext-Build-${BRANCH_VERSION:-local}-${SHORT_SHA}"
 xcodebuild \
   -project Yanami.xcodeproj \
   -scheme Yanami \
@@ -31,14 +32,14 @@ xcodebuild \
   CODE_SIGN_IDENTITY="" \
   DEVELOPMENT_TEAM="" \
   PROVISIONING_PROFILE_SPECIFIER="" \
-  MARKETING_VERSION="$BASE_VERSION" \
+  MARKETING_VERSION="1.0" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   build
 mkdir -p ../build/ios-ipa/Payload
-ditto ../build/ios/Build/Products/Release-iphoneos/Yanami.app ../build/ios-ipa/Payload/Yanami.app
-(cd ../build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
+ditto ../build/ios/Build/Products/Release-iphoneos/Yanami.app ../build/ios-ipa/Payload/YanamiNext.app
+(cd ../build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../${VERSION}.ipa")
 ```
 
-The unsigned IPA is generated at `../build/Yanami-v<base-version>-<short-sha>.ipa`.
+The unsigned IPA is generated at `../build/YanamiNext-Build-<branch>-<short-sha>.ipa`.
 
 The IPA must be signed before device installation.

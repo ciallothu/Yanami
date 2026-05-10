@@ -31,13 +31,13 @@ class PlaceholderScreen : Screen {
             ) {
                 Icon(
                         imageVector = Icons.Default.MonitorHeart,
-                        contentDescription = "Yanami Logo",
+                        contentDescription = "YanamiNext Logo",
                         modifier = Modifier.height(80.dp),
                         tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                        text = "Yanami",
+                        text = "YanamiNext",
                         style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.primary
                 )

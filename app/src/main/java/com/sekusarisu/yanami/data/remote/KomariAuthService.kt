@@ -64,7 +64,7 @@ class KomariAuthService(private val httpClient: HttpClient) {
                         contentType(ContentType.Application.Json)
                         skipSessionInterceptor()
                         applyCustomHeaders(customHeaders)
-                        header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
+                        header("User-Agent", "YanamiNext/${BuildConfig.VERSION_NAME}")
                         setBody(requestBody.toString())
                     }
 
@@ -121,7 +121,7 @@ class KomariAuthService(private val httpClient: HttpClient) {
                         skipSessionInterceptor()
                         applyCustomHeaders(customHeaders)
                         applyAuth(apiKey, AuthType.API_KEY)
-                        header("User-Agent", "Yanami/${BuildConfig.VERSION_NAME}")
+                        header("User-Agent", "YanamiNext/${BuildConfig.VERSION_NAME}")
                         setBody(rpcRequest.toString())
                     }
 

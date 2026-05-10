@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val yanamiVersionCode = providers.gradleProperty("yanamiVersionCode").orNull?.toIntOrNull() ?: 9
+val yanamiVersionName = providers.gradleProperty("yanamiVersionName").orNull ?: "YanamiNext-Build-local"
+
 android {
     namespace = "com.sekusarisu.yanami"
     compileSdk = 36
@@ -13,8 +16,8 @@ android {
         applicationId = "com.sekusarisu.yanami"
         minSdk = 28
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.1.0"
+        versionCode = yanamiVersionCode
+        versionName = yanamiVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

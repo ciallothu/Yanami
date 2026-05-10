@@ -246,7 +246,7 @@ struct KomariClient {
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("Yanami-iPhone/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("YanamiNext-iPhone/1.0", forHTTPHeaderField: "User-Agent")
         profile.sanitizedCustomHeaders.forEach { header in
             request.setValue(header.value, forHTTPHeaderField: header.name)
         }

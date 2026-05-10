@@ -1,15 +1,15 @@
 English | [简体中文](README_zh.md)
 
-# Yanami
+# YanamiNext
 
-![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Ficylian%2FYanami&label=icylian%2FYanami&icon=github&color=%23feb272&message=&style=flat&tz=UTC) 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/icylian/Yanami)
+![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fciallothu%2FYanamiNext&label=ciallothu%2FYanamiNext&icon=github&color=%23feb272&message=&style=flat&tz=UTC)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ciallothu/YanamiNext)
 
 <p style="text-align: center;">
     <img alt="banner" src="assets/banner.png">
 </p>
 
-**Yanami** supports Android & iPhone for the [Komari](https://github.com/komari-monitor/komari) server monitoring tool. The Android app is built with Material Design 3, and the iPhone app is built with SwiftUI.
+**YanamiNext** supports Android & iPhone for the [Komari](https://github.com/komari-monitor/komari) server monitoring tool. The Android app is built with Material Design 3, and the iPhone app is built with SwiftUI.
 
 > A Komari client that supports Android & iPhone.
 
@@ -103,11 +103,12 @@ English | [简体中文](README_zh.md)
 ./gradlew clean assembleDebug
 
 # Unsigned iPhone IPA
-BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_NUMBER=${GITHUB_RUN_NUMBER:-1}
+BRANCH_REF=${GITHUB_REF_NAME:-local}
+BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
 SHORT_SHA=${GITHUB_SHA:-local}
 SHORT_SHA=${SHORT_SHA:0:7}
-VERSION="${BASE_VERSION}-${SHORT_SHA}"
+VERSION="YanamiNext-Build-${BRANCH_VERSION:-local}-${SHORT_SHA}"
 xcodebuild \
   -project ios/Yanami.xcodeproj \
   -scheme Yanami \
@@ -120,15 +121,15 @@ xcodebuild \
   CODE_SIGN_IDENTITY="" \
   DEVELOPMENT_TEAM="" \
   PROVISIONING_PROFILE_SPECIFIER="" \
-  MARKETING_VERSION="$BASE_VERSION" \
+  MARKETING_VERSION="1.0" \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   build
 mkdir -p build/ios-ipa/Payload
-ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/Yanami.app
-(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../Yanami-v${VERSION}.ipa")
+ditto build/ios/Build/Products/Release-iphoneos/Yanami.app build/ios-ipa/Payload/YanamiNext.app
+(cd build/ios-ipa && ditto -c -k --sequesterRsrc --keepParent Payload "../${VERSION}.ipa")
 ```
 
-Android build outputs are located at `app/build/outputs/apk/`. The unsigned iPhone IPA is generated at `build/Yanami-v<base-version>-<short-sha>.ipa` and must be signed by the installer before device installation.
+Android build outputs are located at `app/build/outputs/apk/`. CI pre-release assets use `YanamiNext-Build-<branch>-<short-sha>`; the unsigned iPhone IPA is generated at `build/YanamiNext-Build-<branch>-<short-sha>.ipa` and must be signed by the installer before device installation.
 
 ## Tech Stack
 

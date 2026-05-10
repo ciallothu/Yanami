@@ -42,20 +42,38 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Resolve build version
+        id: build_version
+        run: |
+          BRANCH_REF="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-local}}"
+          BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
+          if [[ -z "$BRANCH_VERSION" ]]; then
+            BRANCH_VERSION="local"
+          fi
+          SHORT_SHA="${GITHUB_SHA::7}"
+          VERSION="YanamiNext-Build-${BRANCH_VERSION}-${SHORT_SHA}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Test and build debug APK
         run: |
           chmod +x ./gradlew
-          ./gradlew testDebugUnitTest assembleDebug
+          ./gradlew \
+            -PyanamiVersionName="${{ steps.build_version.outputs.version }}" \
+            -PyanamiVersionCode="$GITHUB_RUN_NUMBER" \
+            testDebugUnitTest assembleDebug
 
       - name: Run Android lint
         continue-on-error: true
         run: |
-          ./gradlew lintDebug
+          ./gradlew \
+            -PyanamiVersionName="${{ steps.build_version.outputs.version }}" \
+            -PyanamiVersionCode="$GITHUB_RUN_NUMBER" \
+            lintDebug
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
         with:
-          name: yanami-debug-apks
+          name: yanaminext-debug-apks
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -63,7 +81,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: yanami-lint-report
+          name: yanaminext-lint-report
           path: app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
 
@@ -80,7 +98,6 @@ jobs:
 
       - name: Build unsigned iPhone device app
         run: |
-          BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           xcodebuild \
             -project ios/Yanami.xcodeproj \
             -scheme Yanami \
@@ -93,26 +110,30 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            MARKETING_VERSION="$BASE_VERSION" \
+            MARKETING_VERSION="1.0" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             build
 
       - name: Package unsigned iPhone IPA
         run: |
-          BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          BRANCH_REF="${GITHUB_REF_NAME:-local}"
+          BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
+          if [[ -z "$BRANCH_VERSION" ]]; then
+            BRANCH_VERSION="local"
+          fi
           SHORT_SHA="${GITHUB_SHA::7}"
-          VERSION="${BASE_VERSION}-${SHORT_SHA}"
+          VERSION="YanamiNext-Build-${BRANCH_VERSION}-${SHORT_SHA}"
           mkdir -p prerelease/iphone
           APP_PATH="build/ios/Build/Products/Release-iphoneos/Yanami.app"
           test -d "$APP_PATH"
           mkdir -p prerelease/iphone/Payload
-          ditto "$APP_PATH" prerelease/iphone/Payload/Yanami.app
-          (cd prerelease/iphone && ditto -c -k --sequesterRsrc --keepParent Payload "Yanami-v${VERSION}.ipa")
+          ditto "$APP_PATH" prerelease/iphone/Payload/YanamiNext.app
+          (cd prerelease/iphone && ditto -c -k --sequesterRsrc --keepParent Payload "${VERSION}.ipa")
 
       - name: Upload iPhone IPA
         uses: actions/upload-artifact@v4
         with:
-          name: yanami-iphone-ipa
+          name: yanaminext-iphone-ipa
           path: prerelease/iphone/*.ipa
           if-no-files-found: error
 
@@ -133,46 +154,50 @@ jobs:
       - name: Download debug APKs
         uses: actions/download-artifact@v4
         with:
-          name: yanami-debug-apks
+          name: yanaminext-debug-apks
           path: prerelease/raw/android
 
       - name: Download iPhone IPA
         uses: actions/download-artifact@v4
         with:
-          name: yanami-iphone-ipa
+          name: yanaminext-iphone-ipa
           path: prerelease/raw/iphone
 
       - name: Prepare release assets
         id: assets
         run: |
-          BASE_VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          BRANCH_REF="${GITHUB_REF_NAME:-local}"
+          BRANCH_VERSION=$(printf '%s' "$BRANCH_REF" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed -E 's/[^a-z0-9._-]+/-/g; s/-+/-/g; s/^-//; s/-$//')
+          if [[ -z "$BRANCH_VERSION" ]]; then
+            BRANCH_VERSION="local"
+          fi
           SHORT_SHA="${GITHUB_SHA::7}"
-          VERSION="${BASE_VERSION}-${SHORT_SHA}"
+          VERSION="YanamiNext-Build-${BRANCH_VERSION}-${SHORT_SHA}"
           mkdir -p prerelease/assets
 
           for apk in prerelease/raw/android/*.apk; do
             name=$(basename "$apk")
             if [[ "$name" == *"universal"* ]]; then
-              target="Yanami-v${VERSION}-pre-release-universal.apk"
+              target="${VERSION}-pre-release-universal.apk"
             elif [[ "$name" == *"arm64-v8a"* ]]; then
-              target="Yanami-v${VERSION}-pre-release-arm64-v8a.apk"
+              target="${VERSION}-pre-release-arm64-v8a.apk"
             elif [[ "$name" == *"armeabi-v7a"* ]]; then
-              target="Yanami-v${VERSION}-pre-release-armeabi-v7a.apk"
+              target="${VERSION}-pre-release-armeabi-v7a.apk"
             else
-              target="Yanami-v${VERSION}-pre-release-debug.apk"
+              target="${VERSION}-pre-release-debug.apk"
             fi
             cp "$apk" "prerelease/assets/$target"
           done
 
           for ipa in prerelease/raw/iphone/*.ipa; do
-            cp "$ipa" "prerelease/assets/Yanami-v${VERSION}.ipa"
+            cp "$ipa" "prerelease/assets/${VERSION}.ipa"
           done
 
-          echo "base_version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch_version=$BRANCH_VERSION" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build_number=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
           echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
-          echo "release_tag=pre-release-v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create pre-release tag
         run: |
@@ -185,11 +210,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.assets.outputs.release_tag }}
-          name: Yanami Pre-release ${{ steps.assets.outputs.version }}
+          name: YanamiNext Pre-release ${{ steps.assets.outputs.version }}
           body: |
             Automated pre-release build from `${{ github.sha }}`.
 
             Version: `${{ steps.assets.outputs.version }}`
+            Branch version: `${{ steps.assets.outputs.branch_version }}`
             Build number: `${{ steps.assets.outputs.build_number }}`
 
             This build passed:
@@ -203,4 +229,4 @@ jobs:
           prerelease: true
           make_latest: false
           fail_on_unmatched_files: true
-          files: prerelease/assets/Yanami-*
+          files: prerelease/assets/YanamiNext-*

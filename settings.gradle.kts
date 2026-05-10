@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Yanami"
+rootProject.name = "YanamiNext"
 include(":app")

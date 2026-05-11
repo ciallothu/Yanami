@@ -1,3 +1,4 @@
+import LocalAuthentication
 import SwiftUI
 
 struct SettingsView: View {
@@ -7,6 +8,25 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("General") {
+                    Toggle("Auto enter node list", isOn: $draft.autoEnterNodeList)
+                }
+
+                Section("Security") {
+                    Toggle("Biometric lock", isOn: Binding(
+                        get: { draft.biometricEnabled },
+                        set: { enabled in
+                            if enabled {
+                                authenticateBiometric {
+                                    draft.biometricEnabled = true
+                                }
+                            } else {
+                                draft.biometricEnabled = false
+                            }
+                        }
+                    ))
+                }
+
                 Section("Refresh") {
                     Toggle("Auto refresh", isOn: $draft.autoRefreshEnabled)
                     Stepper(value: $draft.refreshIntervalSeconds, in: 1...60, step: 1) {
@@ -16,6 +36,28 @@ struct SettingsView: View {
 
                 Section("Display") {
                     Toggle("Mask IP / UUID", isOn: $draft.maskIpEnabled)
+                    Toggle("Chart animation", isOn: $draft.chartAnimationEnabled)
+                    Picker("Dark mode", selection: $draft.darkMode) {
+                        Text("System").tag("system")
+                        Text("Light").tag("light")
+                        Text("Dark").tag("dark")
+                    }
+                    Picker("Language", selection: $draft.language) {
+                        Text("System").tag("system")
+                        Text("简体中文").tag("zh")
+                        Text("English").tag("en")
+                        Text("日本語").tag("ja")
+                    }
+                    Slider(value: $draft.fontScale, in: 0.8...1.4, step: 0.05) {
+                        Text("Font scale")
+                    } minimumValueLabel: {
+                        Text("80%")
+                    } maximumValueLabel: {
+                        Text("140%")
+                    }
+                    Text("Font scale \(Int(draft.fontScale * 100))%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Terminal") {
@@ -37,6 +79,23 @@ struct SettingsView: View {
             }
             .onChange(of: draft) { newValue in
                 store.updateSettings(newValue)
+            }
+        }
+    }
+
+    private func authenticateBiometric(onSuccess: @escaping () -> Void) {
+        let context = LAContext()
+        var error: NSError?
+        let policy = LAPolicy.deviceOwnerAuthentication
+        guard context.canEvaluatePolicy(policy, error: &error) else {
+            onSuccess()
+            return
+        }
+        context.evaluatePolicy(policy, localizedReason: "Enable biometric lock for YanamiNext") { success, _ in
+            if success {
+                DispatchQueue.main.async {
+                    onSuccess()
+                }
             }
         }
     }

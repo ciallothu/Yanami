@@ -187,6 +187,12 @@ final class AppStore: ObservableObject {
     }
 
     func loadNodeDetail(uuid: String, preserveRecords: Bool = false) async {
+        let uuid = uuid.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !uuid.isEmpty else {
+            nodeDetail.error = "UUID is required"
+            nodeDetail.isLoading = false
+            return
+        }
         selectedNodeId = uuid
         nodeDetail.isLoading = true
         nodeDetail.error = nil
@@ -208,7 +214,7 @@ final class AppStore: ObservableObject {
             if nodes.isEmpty {
                 nodes = try await client.getNodes(token: token)
             }
-            nodeDetail.node = nodes.first { $0.uuid == uuid }
+            nodeDetail.node = nodes.first { $0.uuid.trimmingCharacters(in: .whitespacesAndNewlines) == uuid }
             nodeDetail.isLoading = false
 
             // Load records independently
@@ -219,7 +225,11 @@ final class AppStore: ObservableObject {
                     nodeDetail.loadRecords = try await client.getLoadRecords(token: token, uuid: uuid, hours: nodeDetail.loadHours)
                 }
             } catch {
-                nodeDetail.error = "Load records: \(error.localizedDescription)"
+                if nodeDetail.loadHours == 0, let node = nodeDetail.node {
+                    appendRealtimeLoadRecord(from: node)
+                } else {
+                    nodeDetail.error = "Load records: \(error.localizedDescription)"
+                }
             }
 
             do {

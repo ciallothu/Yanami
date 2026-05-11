@@ -87,9 +87,16 @@ struct AppSettings: Codable, Equatable {
     var terminalFontSize: Int = 14
     var snippets: [TerminalSnippet] = []
     var maskIpEnabled = false
+    var autoEnterNodeList = false
+    var chartAnimationEnabled = true
+    var biometricEnabled = false
+    var darkMode = "system"
+    var language = "system"
+    var fontScale = 1.0
 
     enum CodingKeys: String, CodingKey {
         case autoRefreshEnabled, refreshIntervalSeconds, terminalFontSize, snippets, maskIpEnabled
+        case autoEnterNodeList, chartAnimationEnabled, biometricEnabled, darkMode, language, fontScale
     }
 
     init() {}
@@ -101,6 +108,12 @@ struct AppSettings: Codable, Equatable {
         terminalFontSize = try container.decodeIfPresent(Int.self, forKey: .terminalFontSize) ?? 14
         snippets = try container.decodeIfPresent([TerminalSnippet].self, forKey: .snippets) ?? []
         maskIpEnabled = try container.decodeIfPresent(Bool.self, forKey: .maskIpEnabled) ?? false
+        autoEnterNodeList = try container.decodeIfPresent(Bool.self, forKey: .autoEnterNodeList) ?? false
+        chartAnimationEnabled = try container.decodeIfPresent(Bool.self, forKey: .chartAnimationEnabled) ?? true
+        biometricEnabled = try container.decodeIfPresent(Bool.self, forKey: .biometricEnabled) ?? false
+        darkMode = try container.decodeIfPresent(String.self, forKey: .darkMode) ?? "system"
+        language = try container.decodeIfPresent(String.self, forKey: .language) ?? "system"
+        fontScale = try container.decodeIfPresent(Double.self, forKey: .fontScale) ?? 1.0
     }
 }
 

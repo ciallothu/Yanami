@@ -69,6 +69,7 @@ struct NodeDetailView: View {
                     DetailLine("Uptime", Formatters.uptime(node.uptime))
                     DetailLine("Load", "\(Formatters.number(node.load1, digits: 2)) / \(Formatters.number(node.load5, digits: 2)) / \(Formatters.number(node.load15, digits: 2))")
                     DetailLine("Connections", "TCP \(node.connectionsTcp), UDP \(node.connectionsUdp)")
+                    DetailLine("Processes", "\(node.process)")
                     if let expiredAt = node.expiredAt, !expiredAt.isEmpty {
                         DetailLine("Expires", expiredAt)
                     }
@@ -87,9 +88,16 @@ struct NodeDetailView: View {
                     .pickerStyle(.segmented)
                     
                     if !store.nodeDetail.loadRecords.isEmpty {
-                        LoadChart(records: store.nodeDetail.loadRecords)
-                            .frame(height: 160)
-                            .padding(.vertical, 8)
+                        LoadPeakGrid(records: store.nodeDetail.loadRecords)
+                        PercentLoadChart(records: store.nodeDetail.loadRecords)
+                            .frame(height: 150)
+                            .padding(.vertical, 4)
+                        NetworkLoadChart(records: store.nodeDetail.loadRecords)
+                            .frame(height: 130)
+                            .padding(.vertical, 4)
+                        CountLoadChart(records: store.nodeDetail.loadRecords)
+                            .frame(height: 130)
+                            .padding(.vertical, 4)
                     } else {
                         Text("No load records")
                             .foregroundStyle(.secondary)
@@ -161,9 +169,48 @@ struct NodeDetailView: View {
     }
 }
 
-private struct LoadChart: View {
+private struct LoadPeakGrid: View {
     let records: [LoadRecord]
+
+    var body: some View {
+        let peaks = LoadPeaks(records: records)
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
+            PeakTile(title: "CPU Peak", value: "\(Formatters.number(peaks.cpu, digits: 1))%")
+            PeakTile(title: "RAM Peak", value: "\(Formatters.number(peaks.ram, digits: 1))%")
+            PeakTile(title: "Disk Peak", value: "\(Formatters.number(peaks.disk, digits: 1))%")
+            PeakTile(title: "Down Peak", value: Formatters.rate(Int64(peaks.netIn)))
+            PeakTile(title: "Up Peak", value: Formatters.rate(Int64(peaks.netOut)))
+            PeakTile(title: "TCP Peak", value: "\(peaks.tcp)")
+            PeakTile(title: "UDP Peak", value: "\(peaks.udp)")
+            PeakTile(title: "Process Peak", value: "\(peaks.process)")
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct PeakTile: View {
+    let title: String
+    let value: String
     
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.bold())
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct PercentLoadChart: View {
+    let records: [LoadRecord]
+
     var body: some View {
         Chart {
             ForEach(records) { record in
@@ -180,9 +227,82 @@ private struct LoadChart: View {
                     series: .value("Metric", "RAM")
                 )
                 .foregroundStyle(.green)
+
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("Disk", record.diskPercent),
+                    series: .value("Metric", "Disk")
+                )
+                .foregroundStyle(.purple)
             }
         }
         .chartYScale(domain: 0...100)
+        .chartLegend(position: .bottom)
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .leading)
+        }
+    }
+}
+
+private struct NetworkLoadChart: View {
+    let records: [LoadRecord]
+
+    var body: some View {
+        Chart {
+            ForEach(records) { record in
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("Down", Double(record.netIn)),
+                    series: .value("Metric", "Down")
+                )
+                .foregroundStyle(.blue)
+
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("Up", Double(record.netOut)),
+                    series: .value("Metric", "Up")
+                )
+                .foregroundStyle(.orange)
+            }
+        }
+        .chartLegend(position: .bottom)
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .leading)
+        }
+    }
+}
+
+private struct CountLoadChart: View {
+    let records: [LoadRecord]
+
+    var body: some View {
+        Chart {
+            ForEach(records) { record in
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("TCP", Double(record.connections)),
+                    series: .value("Metric", "TCP")
+                )
+                .foregroundStyle(.blue)
+
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("UDP", Double(record.connectionsUdp)),
+                    series: .value("Metric", "UDP")
+                )
+                .foregroundStyle(.cyan)
+
+                LineMark(
+                    x: .value("Time", parseISO8601(record.time)),
+                    y: .value("Process", Double(record.process)),
+                    series: .value("Metric", "Process")
+                )
+                .foregroundStyle(.red)
+            }
+        }
+        .chartLegend(position: .bottom)
         .chartXAxis {
             if let first = records.first, let last = records.last {
                 let span = parseISO8601(last.time).timeIntervalSince(parseISO8601(first.time))
@@ -201,6 +321,28 @@ private struct LoadChart: View {
                 }
             }
         }
+    }
+}
+
+private struct LoadPeaks {
+    let cpu: Double
+    let ram: Double
+    let disk: Double
+    let netIn: Double
+    let netOut: Double
+    let tcp: Int
+    let udp: Int
+    let process: Int
+
+    init(records: [LoadRecord]) {
+        cpu = records.map(\.cpu).max() ?? 0
+        ram = records.map(\.ramPercent).max() ?? 0
+        disk = records.map(\.diskPercent).max() ?? 0
+        netIn = Double(records.map(\.netIn).max() ?? 0)
+        netOut = Double(records.map(\.netOut).max() ?? 0)
+        tcp = records.map(\.connections).max() ?? 0
+        udp = records.map(\.connectionsUdp).max() ?? 0
+        process = records.map(\.process).max() ?? 0
     }
 }
 
@@ -336,12 +478,21 @@ final class SshTerminalViewModel: ObservableObject {
         }
         
         var request = URLRequest(url: url)
-        request.setValue("session_token=\(token)", forHTTPHeaderField: "Cookie")
         request.setValue("YanamiNext-iPhone/1.0", forHTTPHeaderField: "User-Agent")
-        request.setValue(server.normalizedBaseURL, forHTTPHeaderField: "Origin")
         server.sanitizedCustomHeaders.forEach { header in
             request.setValue(header.value, forHTTPHeaderField: header.name)
         }
+        switch server.authType {
+        case .password:
+            let existingCookie = request.value(forHTTPHeaderField: "Cookie") ?? ""
+            let sessionCookie = "session_token=\(token)"
+            request.setValue(existingCookie.isEmpty ? sessionCookie : "\(existingCookie); \(sessionCookie)", forHTTPHeaderField: "Cookie")
+        case .apiKey:
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        case .guest:
+            break
+        }
+        request.setValue(buildOrigin(), forHTTPHeaderField: "Origin")
         
         let session = URLSession(configuration: .default)
         webSocketTask = session.webSocketTask(with: request)
@@ -411,10 +562,12 @@ final class SshTerminalViewModel: ObservableObject {
     }
     
     private func handleTextMessage(_ text: String) {
-        // Handle potential JSON messages from server if any
         if !isConnected {
             isConnected = true
             isConnecting = false
+        }
+        if let data = text.data(using: .utf8), !looksLikeControlMessage(text) {
+            NotificationCenter.default.post(name: .sshTerminalOutput, object: data)
         }
     }
     
@@ -441,13 +594,43 @@ final class SshTerminalViewModel: ObservableObject {
     }
     
     private func buildTerminalURL() -> URL? {
-        var base = server.normalizedBaseURL
-        if base.hasPrefix("https://") {
-            base = "wss://" + base.dropFirst(8)
-        } else if base.hasPrefix("http://") {
-            base = "ws://" + base.dropFirst(7)
+        let cleanUuid = uuid.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanUuid.isEmpty,
+              var components = URLComponents(string: server.normalizedBaseURL) else {
+            return nil
         }
-        return URL(string: "\(base)/api/admin/client/\(uuid)/terminal")
+        if components.scheme == "https" {
+            components.scheme = "wss"
+        } else if components.scheme == "http" {
+            components.scheme = "ws"
+        }
+        let basePath = components.percentEncodedPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let encodedUuid = cleanUuid.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? cleanUuid
+        let terminalPath = ["", basePath, "api/admin/client", encodedUuid, "terminal"]
+            .filter { !$0.isEmpty }
+            .joined(separator: "/")
+        components.percentEncodedPath = "/" + terminalPath
+        return components.url
+    }
+
+    private func buildOrigin() -> String {
+        guard var components = URLComponents(string: server.normalizedBaseURL),
+              let scheme = components.scheme,
+              let host = components.host else {
+            return server.normalizedBaseURL
+        }
+        components.path = ""
+        components.query = nil
+        components.fragment = nil
+        components.scheme = scheme == "wss" ? "https" : (scheme == "ws" ? "http" : scheme)
+        return components.url?.absoluteString.trimmedTrailingSlash() ?? "\(scheme)://\(host)"
+    }
+
+    private func looksLikeControlMessage(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("{"), trimmed.hasSuffix("}") else { return false }
+        return trimmed.contains("\"type\"") &&
+            (trimmed.contains("heartbeat") || trimmed.contains("resize") || trimmed.contains("ping"))
     }
 }
 
@@ -485,7 +668,7 @@ struct SshTerminalView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                TerminalWebView(viewModel: viewModel)
+                TerminalWebView(viewModel: viewModel, fontSize: store.settings.terminalFontSize)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             
@@ -560,6 +743,7 @@ struct TerminalKeyButton: View {
 
 struct TerminalWebView: UIViewRepresentable {
     @ObservedObject var viewModel: SshTerminalViewModel
+    let fontSize: Int
     
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -586,7 +770,7 @@ struct TerminalWebView: UIViewRepresentable {
             <script>
                 const term = new Terminal({
                     cursorBlink: true,
-                    fontSize: 14,
+                    fontSize: \(fontSize),
                     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
                     theme: { background: '#000' }
                 });

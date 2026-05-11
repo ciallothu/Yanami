@@ -76,16 +76,18 @@ struct KomariClient {
     }
 
     func getLoadRecords(token: String, uuid: String, hours: Int) async throws -> [LoadRecord] {
+        let uuid = try normalizedUUID(uuid)
         let result: LoadRecordsPayload = try await rpc(
             method: "common:getRecords",
             params: ["uuid": uuid, "type": "load", "hours": hours],
             token: token,
             responseType: LoadRecordsPayload.self
         )
-        return (result.records[uuid] ?? []).map { $0.toDomain() }
+        return (result.records.matching(uuid: uuid) ?? []).map { $0.toDomain() }
     }
 
     func getPingRecords(token: String, uuid: String, hours: Int) async throws -> ([PingTask], [PingRecord]) {
+        let uuid = try normalizedUUID(uuid)
         let result: PingRecordsPayload = try await rpc(
             method: "common:getRecords",
             params: ["uuid": uuid, "type": "ping", "hours": hours],
@@ -101,6 +103,7 @@ struct KomariClient {
     }
 
     func getRecentStatus(token: String, uuid: String) async throws -> [LoadRecord] {
+        let uuid = try normalizedUUID(uuid)
         let encodedUuid = uuid.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? uuid
         let request = try makeRequest(path: "/api/recent/\(encodedUuid)", method: "GET", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -124,20 +127,22 @@ struct KomariClient {
         let request = try makeRequest(path: "/api/admin/client/list", method: "GET", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateAdminResponse(data: data, response: response, path: "/api/admin/client/list")
-        return try Self.decoder.decode([ManagedClient].self, from: data)
+        return try decodeAdminPayload([ManagedClient].self, from: data)
     }
     
     func deleteClient(token: String, uuid: String) async throws {
+        let uuid = try normalizedUUID(uuid)
         let request = try makeRequest(path: "/api/admin/client/\(uuid)/remove", method: "POST", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateAdminResponse(data: data, response: response, path: "/api/admin/client/\(uuid)/remove")
     }
     
     func getClientToken(token: String, uuid: String) async throws -> String {
+        let uuid = try normalizedUUID(uuid)
         let request = try makeRequest(path: "/api/admin/client/\(uuid)/token", method: "GET", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateAdminResponse(data: data, response: response, path: "/api/admin/client/\(uuid)/token")
-        let payload = try Self.decoder.decode([String: String].self, from: data)
+        let payload = try decodeAdminPayload([String: String].self, from: data)
         return payload["token"] ?? ""
     }
 
@@ -147,7 +152,7 @@ struct KomariClient {
         let request = try makeRequest(path: "/api/admin/ping/", method: "GET", token: token)
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateAdminResponse(data: data, response: response, path: "/api/admin/ping/")
-        return try Self.decoder.decode([AdminPingTask].self, from: data)
+        return try decodeAdminPayload([AdminPingTask].self, from: data)
     }
 
     func deletePingTask(token: String, ids: [Int]) async throws {
@@ -160,6 +165,12 @@ struct KomariClient {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw KomariClientError.invalidResponse
         }
+        if (200...299).contains(httpResponse.statusCode),
+           let env = try? Self.decoder.decode(AdminEnvelope.self, from: data),
+           let status = env.status,
+           status.localizedCaseInsensitiveCompare("error") == .orderedSame {
+            throw KomariClientError.rpc(env.message ?? "Admin API error")
+        }
         guard (200...299).contains(httpResponse.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? ""
             if let env = try? Self.decoder.decode(AdminEnvelope.self, from: data), let msg = env.message {
@@ -167,6 +178,17 @@ struct KomariClient {
             }
             throw KomariClientError.httpStatus(httpResponse.statusCode, path: path, body: body)
         }
+    }
+
+    private func decodeAdminPayload<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        if let raw = try? Self.decoder.decode(T.self, from: data) {
+            return raw
+        }
+        if let envelope = try? Self.decoder.decode(AdminDataEnvelope<T>.self, from: data),
+           let payload = envelope.data {
+            return payload
+        }
+        throw KomariClientError.invalidResponse
     }
 
     func mergeNodes(infos: [String: NodeInfoPayload], statuses: [String: NodeStatusPayload]) -> [KomariNode] {
@@ -332,6 +354,14 @@ struct KomariClient {
         return request
     }
 
+    private func normalizedUUID(_ uuid: String) throws -> String {
+        let cleaned = uuid.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else {
+            throw KomariClientError.invalidConfiguration("UUID is required")
+        }
+        return cleaned
+    }
+
     private func extractSessionToken(from response: HTTPURLResponse) -> String? {
         let cookieHeader = response.value(forHTTPHeaderField: "Set-Cookie") ?? ""
         for part in cookieHeader.components(separatedBy: ";") {
@@ -392,6 +422,12 @@ private struct RpcErrorPayload: Decodable {
 private struct AdminEnvelope: Decodable {
     let status: String?
     let message: String?
+}
+
+private struct AdminDataEnvelope<DataPayload: Decodable>: Decodable {
+    let status: String?
+    let message: String?
+    let data: DataPayload?
 }
 
 private struct VersionResult: Decodable {
@@ -559,4 +595,12 @@ private struct RecentStatusItemPayload: Decodable {
 private func percent(used: Int64?, total: Int64?) -> Double {
     guard let used, let total, total > 0 else { return 0 }
     return Double(used) / Double(total) * 100
+}
+
+private extension Dictionary where Key == String {
+    func matching(uuid: String) -> Value? {
+        self[uuid] ?? first { key, _ in
+            key.trimmingCharacters(in: .whitespacesAndNewlines) == uuid
+        }?.value
+    }
 }

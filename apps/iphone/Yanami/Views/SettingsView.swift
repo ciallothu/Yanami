@@ -67,8 +67,7 @@ struct SettingsView: View {
                 }
                 
                 Section("Build") {
-                    Text("Android & iPhone")
-                    Text("Pre-release assets use a unique version tag per CI run.")
+                    Text("Pre-release builds are generated automatically by CI for each PR.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

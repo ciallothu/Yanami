@@ -258,6 +258,15 @@ final class AppStore: ObservableObject {
         Task { await loadNodeDetail(uuid: selectedNodeId) }
     }
 
+    func refreshNodeDetailRecords() async {
+        guard let selectedNodeId else { return }
+        if nodeDetail.loadHours == 0 {
+            await refreshStatusesOnly()
+        } else {
+            await loadNodeDetail(uuid: selectedNodeId, preserveRecords: true)
+        }
+    }
+
     func updateSettings(_ settings: AppSettings) {
         self.settings = settings
         persist()
@@ -304,8 +313,13 @@ final class AppStore: ObservableObject {
     }
 
     private func appendRealtimeLoadRecord(from node: KomariNode) {
+        let now = Date()
+        if let last = nodeDetail.loadRecords.last,
+           now.timeIntervalSince(parseLoadRecordDate(last.time)) < max(settings.refreshIntervalSeconds * 0.8, 0.8) {
+            return
+        }
         let record = LoadRecord(
-            time: ISO8601DateFormatter().string(from: Date()),
+            time: ISO8601DateFormatter().string(from: now),
             cpu: node.cpuUsage,
             ramPercent: node.memTotal > 0 ? Double(node.memUsed) / Double(node.memTotal) * 100 : 0,
             diskPercent: node.diskTotal > 0 ? Double(node.diskUsed) / Double(node.diskTotal) * 100 : 0,
@@ -320,6 +334,14 @@ final class AppStore: ObservableObject {
         if nodeDetail.loadRecords.count > 120 {
             nodeDetail.loadRecords.removeFirst(nodeDetail.loadRecords.count - 120)
         }
+    }
+
+    private func parseLoadRecordDate(_ string: String) -> Date {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: string) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: string) ?? .distantPast
     }
 }
 

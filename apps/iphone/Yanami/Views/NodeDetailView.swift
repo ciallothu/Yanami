@@ -90,14 +90,9 @@ struct NodeDetailView: View {
                     if !store.nodeDetail.loadRecords.isEmpty {
                         LoadPeakGrid(records: store.nodeDetail.loadRecords)
                         PercentLoadChart(records: store.nodeDetail.loadRecords)
-                            .frame(height: 150)
-                            .padding(.vertical, 4)
                         NetworkLoadChart(records: store.nodeDetail.loadRecords)
-                            .frame(height: 130)
-                            .padding(.vertical, 4)
                         CountLoadChart(records: store.nodeDetail.loadRecords)
-                            .frame(height: 130)
-                            .padding(.vertical, 4)
+                            .animation(store.settings.chartAnimationEnabled ? .default : nil, value: store.nodeDetail.loadRecords)
                     } else {
                         Text("No load records")
                             .foregroundStyle(.secondary)
@@ -163,8 +158,23 @@ struct NodeDetailView: View {
         .refreshable {
             await store.loadNodeDetail(uuid: nodeId)
         }
-        .task {
+        .task(id: detailRefreshTaskID) {
             await store.loadNodeDetail(uuid: nodeId)
+            await runDetailRefreshLoop()
+        }
+    }
+
+    private var detailRefreshTaskID: String {
+        "\(nodeId)-\(store.nodeDetail.loadHours)"
+    }
+
+    private func runDetailRefreshLoop() async {
+        while !Task.isCancelled {
+            let realtime = store.nodeDetail.loadHours == 0
+            let seconds = realtime ? max(store.settings.refreshIntervalSeconds, 1) : max(store.settings.refreshIntervalSeconds, 30)
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            await store.refreshNodeDetailRecords()
         }
     }
 }
@@ -212,36 +222,68 @@ private struct PercentLoadChart: View {
     let records: [LoadRecord]
 
     var body: some View {
-        Chart {
-            ForEach(records) { record in
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("CPU", record.cpu),
-                    series: .value("Metric", "CPU")
-                )
-                .foregroundStyle(.blue)
-                
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("RAM", record.ramPercent),
-                    series: .value("Metric", "RAM")
-                )
-                .foregroundStyle(.green)
+        VStack(alignment: .leading, spacing: 8) {
+            LoadChartHeader(
+                title: "Usage Percent",
+                systemImage: "gauge.medium",
+                items: [
+                    LoadChartLegendItem(title: "CPU", systemImage: "cpu", color: .blue),
+                    LoadChartLegendItem(title: "RAM", systemImage: "memorychip", color: .green),
+                    LoadChartLegendItem(title: "Disk", systemImage: "internaldrive", color: .purple)
+                ]
+            )
 
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("Disk", record.diskPercent),
-                    series: .value("Metric", "Disk")
-                )
-                .foregroundStyle(.purple)
+            Chart {
+                ForEach(records) { record in
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("CPU", record.cpu),
+                        series: .value("Metric", "CPU")
+                    )
+                    .foregroundStyle(.blue)
+
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("RAM", record.ramPercent),
+                        series: .value("Metric", "RAM")
+                    )
+                    .foregroundStyle(.green)
+
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("Disk", record.diskPercent),
+                        series: .value("Metric", "Disk")
+                    )
+                    .foregroundStyle(.purple)
+                }
+            }
+            .frame(height: 170)
+            .chartLegend(.hidden)
+            .chartYScale(domain: 0...100)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(formatLoadAxisDate(date))
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let percent = value.as(Double.self) {
+                            Text("\(Int(percent))%")
+                        }
+                    }
+                }
             }
         }
-        .chartYScale(domain: 0...100)
-        .chartLegend(position: .bottom)
-        .chartXAxis(.hidden)
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
+        .padding(.vertical, 8)
     }
 }
 
@@ -249,28 +291,59 @@ private struct NetworkLoadChart: View {
     let records: [LoadRecord]
 
     var body: some View {
-        Chart {
-            ForEach(records) { record in
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("Down", Double(record.netIn)),
-                    series: .value("Metric", "Down")
-                )
-                .foregroundStyle(.blue)
+        VStack(alignment: .leading, spacing: 8) {
+            LoadChartHeader(
+                title: "Network Rate",
+                systemImage: "arrow.down.arrow.up",
+                items: [
+                    LoadChartLegendItem(title: "Download", systemImage: "arrow.down", color: .blue),
+                    LoadChartLegendItem(title: "Upload", systemImage: "arrow.up", color: .orange)
+                ]
+            )
 
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("Up", Double(record.netOut)),
-                    series: .value("Metric", "Up")
-                )
-                .foregroundStyle(.orange)
+            Chart {
+                ForEach(records) { record in
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("Download", Double(record.netIn)),
+                        series: .value("Metric", "Download")
+                    )
+                    .foregroundStyle(.blue)
+
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("Upload", Double(record.netOut)),
+                        series: .value("Metric", "Upload")
+                    )
+                    .foregroundStyle(.orange)
+                }
+            }
+            .frame(height: 155)
+            .chartLegend(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(formatLoadAxisDate(date))
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let rate = value.as(Double.self) {
+                            Text(Formatters.rate(Int64(rate)))
+                        }
+                    }
+                }
             }
         }
-        .chartLegend(position: .bottom)
-        .chartXAxis(.hidden)
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
+        .padding(.vertical, 8)
     }
 }
 
@@ -278,46 +351,103 @@ private struct CountLoadChart: View {
     let records: [LoadRecord]
 
     var body: some View {
-        Chart {
-            ForEach(records) { record in
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("TCP", Double(record.connections)),
-                    series: .value("Metric", "TCP")
-                )
-                .foregroundStyle(.blue)
+        VStack(alignment: .leading, spacing: 8) {
+            LoadChartHeader(
+                title: "Connections & Processes",
+                systemImage: "number",
+                items: [
+                    LoadChartLegendItem(title: "TCP", systemImage: "network", color: .blue),
+                    LoadChartLegendItem(title: "UDP", systemImage: "point.3.connected.trianglepath.dotted", color: .cyan),
+                    LoadChartLegendItem(title: "Process", systemImage: "gearshape.2", color: .red)
+                ]
+            )
 
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("UDP", Double(record.connectionsUdp)),
-                    series: .value("Metric", "UDP")
-                )
-                .foregroundStyle(.cyan)
+            Chart {
+                ForEach(records) { record in
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("TCP", Double(record.connections)),
+                        series: .value("Metric", "TCP")
+                    )
+                    .foregroundStyle(.blue)
 
-                LineMark(
-                    x: .value("Time", parseISO8601(record.time)),
-                    y: .value("Process", Double(record.process)),
-                    series: .value("Metric", "Process")
-                )
-                .foregroundStyle(.red)
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("UDP", Double(record.connectionsUdp)),
+                        series: .value("Metric", "UDP")
+                    )
+                    .foregroundStyle(.cyan)
+
+                    LineMark(
+                        x: .value("Time", parseISO8601(record.time)),
+                        y: .value("Process", Double(record.process)),
+                        series: .value("Metric", "Process")
+                    )
+                    .foregroundStyle(.red)
+                }
+            }
+            .frame(height: 155)
+            .chartLegend(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(formatLoadAxisDate(date))
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let count = value.as(Double.self) {
+                            Text("\(Int(count))")
+                        }
+                    }
+                }
             }
         }
-        .chartLegend(position: .bottom)
-        .chartXAxis {
-            if let first = records.first, let last = records.last {
-                let span = parseISO8601(last.time).timeIntervalSince(parseISO8601(first.time))
-                if span <= 3600 {
-                    AxisMarks(values: .stride(by: .minute)) { _ in
-                        AxisGridLine()
-                        AxisTick()
-                        AxisValueLabel(format: .dateTime.minute().second())
+        .padding(.vertical, 8)
+    }
+}
+
+private struct LoadChartLegendItem {
+    let title: String
+    let systemImage: String
+    let color: Color
+}
+
+private struct LoadChartHeader: View {
+    let title: String
+    let systemImage: String
+    let items: [LoadChartLegendItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text(title)
+                    .font(.subheadline.bold())
+            } icon: {
+                Image(systemName: systemImage)
+                    .foregroundStyle(.blue)
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 6) {
+                ForEach(items, id: \.title) { item in
+                    Label {
+                        Text(item.title)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    } icon: {
+                        Image(systemName: item.systemImage)
+                            .foregroundStyle(item.color)
                     }
-                } else {
-                    AxisMarks(values: .stride(by: .hour)) { _ in
-                        AxisGridLine()
-                        AxisTick()
-                        AxisValueLabel(format: .dateTime.hour().minute())
-                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
         }
@@ -364,6 +494,12 @@ private struct PingChart: View {
             AxisMarks(position: .leading)
         }
     }
+}
+
+private func formatLoadAxisDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MM-dd HH:mm:ss"
+    return formatter.string(from: date)
 }
 
 private func parseISO8601(_ string: String) -> Date {

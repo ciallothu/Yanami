@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var store: AppStore
     @State private var draft = AppSettings()
+    @State private var biometricError: String?
 
     var body: some View {
         NavigationStack {
@@ -25,6 +26,11 @@ struct SettingsView: View {
                             }
                         }
                     ))
+                    if let biometricError {
+                        Text(biometricError)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Refresh") {
@@ -73,6 +79,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .environment(\.locale, AppLocalization.locale(for: draft.language))
             .onAppear {
                 draft = store.settings
             }
@@ -84,16 +91,24 @@ struct SettingsView: View {
 
     private func authenticateBiometric(onSuccess: @escaping () -> Void) {
         let context = LAContext()
+        context.localizedFallbackTitle = ""
+        context.localizedCancelTitle = AppLocalization.string("Cancel", language: draft.language)
         var error: NSError?
-        let policy = LAPolicy.deviceOwnerAuthentication
+        let policy = LAPolicy.deviceOwnerAuthenticationWithBiometrics
         guard context.canEvaluatePolicy(policy, error: &error) else {
-            onSuccess()
+            biometricError = AppLocalization.string("Face ID or Touch ID is unavailable.", language: draft.language)
             return
         }
-        context.evaluatePolicy(policy, localizedReason: "Enable biometric lock for YanamiNext") { success, _ in
-            if success {
-                DispatchQueue.main.async {
+        context.evaluatePolicy(
+            policy,
+            localizedReason: AppLocalization.string("Enable biometric lock for YanamiNext", language: draft.language)
+        ) { success, _ in
+            DispatchQueue.main.async {
+                if success {
+                    biometricError = nil
                     onSuccess()
+                } else {
+                    biometricError = AppLocalization.string("Biometric authentication failed.", language: draft.language)
                 }
             }
         }

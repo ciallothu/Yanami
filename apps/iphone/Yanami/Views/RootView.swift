@@ -5,17 +5,19 @@ struct RootView: View {
     @EnvironmentObject private var store: AppStore
     @State private var selectedTab = 0
     @State private var unlocked = false
+    @State private var authError: String?
 
     var body: some View {
         Group {
             if store.settings.biometricEnabled && !unlocked {
-                BiometricLockView {
+                BiometricLockView(message: authError) {
                     authenticate()
                 }
             } else {
                 tabs
             }
         }
+        .environment(\.locale, AppLocalization.locale(for: store.settings.language))
     }
 
     private var tabs: some View {
@@ -40,6 +42,7 @@ struct RootView: View {
         }
         .environment(\.sizeCategory, store.settings.fontScale.contentSizeCategory)
         .preferredColorScheme(store.settings.darkMode.colorScheme)
+        .id(store.settings.language)
         .task {
             if store.settings.autoEnterNodeList, store.activeServer != nil {
                 selectedTab = 1
@@ -60,16 +63,24 @@ struct RootView: View {
 
     private func authenticate() {
         let context = LAContext()
+        context.localizedFallbackTitle = ""
+        context.localizedCancelTitle = AppLocalization.string("Cancel", language: store.settings.language)
         var error: NSError?
-        let policy = LAPolicy.deviceOwnerAuthentication
+        let policy = LAPolicy.deviceOwnerAuthenticationWithBiometrics
         guard context.canEvaluatePolicy(policy, error: &error) else {
-            unlocked = true
+            authError = AppLocalization.string("Face ID or Touch ID is unavailable.", language: store.settings.language)
             return
         }
-        context.evaluatePolicy(policy, localizedReason: "Unlock YanamiNext") { success, _ in
-            if success {
-                DispatchQueue.main.async {
+        context.evaluatePolicy(
+            policy,
+            localizedReason: AppLocalization.string("Unlock YanamiNext", language: store.settings.language)
+        ) { success, _ in
+            DispatchQueue.main.async {
+                if success {
+                    authError = nil
                     unlocked = true
+                } else {
+                    authError = AppLocalization.string("Biometric authentication failed.", language: store.settings.language)
                 }
             }
         }
@@ -77,6 +88,7 @@ struct RootView: View {
 }
 
 private struct BiometricLockView: View {
+    let message: String?
     let onUnlock: () -> Void
 
     var body: some View {
@@ -86,6 +98,12 @@ private struct BiometricLockView: View {
                 .foregroundStyle(.secondary)
             Text("YanamiNext Locked")
                 .font(.title3.bold())
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             Button("Unlock", action: onUnlock)
                 .buttonStyle(.borderedProminent)
         }

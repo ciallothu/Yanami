@@ -599,6 +599,7 @@ final class SshTerminalViewModel: ObservableObject {
     private let token: String
     private var webSocketTask: URLSessionWebSocketTask?
     private var heartbeatTimer: Timer?
+    private var didSendInitialDirectory = false
     
     init(uuid: String, server: ServerProfile, token: String) {
         self.uuid = uuid
@@ -632,6 +633,7 @@ final class SshTerminalViewModel: ObservableObject {
         
         let session = URLSession(configuration: .default)
         webSocketTask = session.webSocketTask(with: request)
+        didSendInitialDirectory = false
         webSocketTask?.resume()
         
         self.isConnecting = true
@@ -645,6 +647,7 @@ final class SshTerminalViewModel: ObservableObject {
     func disconnect() {
         heartbeatTimer?.invalidate()
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
+        didSendInitialDirectory = false
         isConnected = false
     }
     
@@ -701,6 +704,7 @@ final class SshTerminalViewModel: ObservableObject {
         if !isConnected {
             isConnected = true
             isConnecting = false
+            sendInitialDirectoryIfNeeded()
         }
         if let data = text.data(using: .utf8), !looksLikeControlMessage(text) {
             NotificationCenter.default.post(name: .sshTerminalOutput, object: data)
@@ -711,11 +715,18 @@ final class SshTerminalViewModel: ObservableObject {
         if !isConnected {
             isConnected = true
             isConnecting = false
+            sendInitialDirectoryIfNeeded()
         }
         // This will be forwarded to the WebView
         NotificationCenter.default.post(name: .sshTerminalOutput, object: data)
     }
     
+    private func sendInitialDirectoryIfNeeded() {
+        guard !didSendInitialDirectory else { return }
+        didSendInitialDirectory = true
+        sendText("cd /root 2>/dev/null || cd /\r")
+    }
+
     private func startHeartbeat() {
         heartbeatTimer?.invalidate()
         heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
